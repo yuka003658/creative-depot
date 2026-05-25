@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CREATIVE DEPOT | クリエイティブ事例集約ポータル</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Decorative Orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Header -->
+  <header class="main-header">
+    <div class="header-container">
+      <div class="logo-area">
+        <span class="logo-badge">CR</span>
+        <div>
+          <h1>CREATIVE <span class="text-gradient">DEPOT</span></h1>
+          <p class="subtitle">Ad & Design Strategy Database</p>
+        </div>
+      </div>
+      
+      <div class="nav-controls">
+        <div class="mode-switch-wrapper">
+          <button id="view-mode-btn" class="switch-btn active" data-mode="viewer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+            ギャラリー閲覧
+          </button>
+          <button id="admin-mode-btn" class="switch-btn" data-mode="admin">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            管理・情報追加
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+    
+    <!-- ================= VIEWER SECTION ================= -->
+    <section id="viewer-section" class="content-section active">
+      <!-- Search & Filters Container -->
+      <div class="filter-panel glass-panel">
+        <div class="search-bar-wrapper">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="search-input" placeholder="見出し、キーワード、登録者名から検索...">
+          <button id="clear-search-btn" class="clear-btn" aria-label="検索をクリア" style="display: none;">&times;</button>
+        </div>
+
+        <div class="filter-dropdowns-row">
+
+          <!-- 施策タイプ dropdown -->
+          <div class="filter-dropdown-group">
+            <button class="filter-trigger-btn" id="category-trigger-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 22 22 7 12 2"></polygon></svg>
+              <span class="trigger-label">施策タイプ</span>
+              <span class="filter-badge" id="category-active-label">すべて</span>
+              <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="filter-dropdown-panel">
+              <div class="dropdown-panel-header">施策タイプで絞り込み</div>
+              <div class="category-tags-list" id="category-tags-container">
+                <button class="tag-filter-btn active" data-category="all">すべて</button>
+                <button class="tag-filter-btn" data-category="ブランディング">ブランディング</button>
+                <button class="tag-filter-btn" data-category="マス＆ビジュアル表現">マス＆ビジュアル表現</button>
+                <button class="tag-filter-btn" data-category="テレビCM・WEB動画">テレビCM・WEB動画</button>
+                <button class="tag-filter-btn" data-category="パッケージデザイン・装丁">パッケージデザイン・装丁</button>
+                <button class="tag-filter-btn" data-category="SNS施策・キャンペーン">SNS施策・キャンペーン</button>
+                <button class="tag-filter-btn" data-category="WEBサイト・UI/UX">WEBサイト・UI/UX</button>
+                <button class="tag-filter-btn" data-category="イベント・ポップアップストア">イベント・ポップアップストア</button>
+                <button class="tag-filter-btn" data-category="インストア・販促プロモーション">インストア・販促プロモーション</button>
+                <button class="tag-filter-btn" data-category="空間デザイン・環境演出">空間デザイン・環境演出</button>
+                <button class="tag-filter-btn" data-category="PR・ソーシャルグッド（SDGs）">PR・ソーシャルグッド（SDGs）</button>
+                <button class="tag-filter-btn" data-category="ゲリラマーケティング">ゲリラマーケティング</button>
+                <button class="tag-filter-btn" data-category="AI・最新テック活用">AI・最新テック活用</button>
+                <button class="tag-filter-btn" data-category="メタバース・ゲーム内施策">メタバース・ゲーム内施策</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 業界別 dropdown -->
+          <div class="filter-dropdown-group">
+            <button class="filter-trigger-btn" id="industry-trigger-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              <span class="trigger-label">業界別</span>
+              <span class="filter-badge" id="industry-active-label">すべて</span>
+              <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="filter-dropdown-panel">
+              <div class="dropdown-panel-header">業界別で絞り込み</div>
+              <div class="category-tags-list" id="industry-tags-container">
+                <button class="tag-industry-btn active" data-industry="all">すべて</button>
+                <button class="tag-industry-btn" data-industry="化粧品">化粧品</button>
+                <button class="tag-industry-btn" data-industry="食品飲料">食品飲料</button>
+                <button class="tag-industry-btn" data-industry="流通">流通</button>
+                <button class="tag-industry-btn" data-industry="スポーツ">スポーツ</button>
+                <button class="tag-industry-btn" data-industry="エンタメ">エンタメ</button>
+                <button class="tag-industry-btn" data-industry="IT・テック">IT・テック</button>
+                <button class="tag-industry-btn" data-industry="その他">その他</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="stats-bar">
+        <p>検索結果: <span id="results-count" class="highlight">0</span> 件のクリエイティブ情報</p>
+      </div>
+
+      <!-- Cards Grid -->
+      <div class="cards-grid" id="cards-grid-container">
+        <!-- Rendered dynamically by JavaScript -->
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>データを読み込んでいます...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN SECTION ================= -->
+    <section id="admin-section" class="content-section">
+      <div class="admin-grid">
+        <!-- Input Form -->
+        <div class="admin-form-wrapper glass-panel">
+          <h2><span class="text-gradient">クリエイティブ情報の追加</span></h2>
+          <p class="section-desc">新しく見つけたクリエイティブ事例を収集して要約します。</p>
+
+          <form id="add-card-form" class="modern-form">
+
+            <!-- Step 1: カテゴリ・業界（検索の軸になる） -->
+            <div class="form-row split">
+              <div class="form-group">
+                <label for="input-category">施策タイプ <span class="required">*</span></label>
+                <select id="input-category" required>
+                  <option value="" disabled selected>選択してください</option>
+                  <option value="ブランディング">ブランディング</option>
+                  <option value="マス＆ビジュアル表現">マス＆ビジュアル表現</option>
+                  <option value="テレビCM・WEB動画">テレビCM・WEB動画</option>
+                  <option value="パッケージデザイン・装丁">パッケージデザイン・装丁</option>
+                  <option value="SNS施策・キャンペーン">SNS施策・キャンペーン</option>
+                  <option value="WEBサイト・UI/UX">WEBサイト・UI/UX</option>
+                  <option value="イベント・ポップアップストア">イベント・ポップアップストア</option>
+                  <option value="インストア・販促プロモーション">インストア・販促プロモーション</option>
+                  <option value="空間デザイン・環境演出">空間デザイン・環境演出</option>
+                  <option value="PR・ソーシャルグッド（SDGs）">PR・ソーシャルグッド（SDGs）</option>
+                  <option value="ゲリラマーケティング">ゲリラマーケティング</option>
+                  <option value="AI・最新テック活用">AI・最新テック活用</option>
+                  <option value="メタバース・ゲーム内施策">メタバース・ゲーム内施策</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="input-industry">業界 <span class="required">*</span></label>
+                <select id="input-industry" required>
+                  <option value="" disabled selected>選択してください</option>
+                  <option value="化粧品">化粧品</option>
+                  <option value="食品飲料">食品飲料</option>
+                  <option value="流通">流通</option>
+                  <option value="スポーツ">スポーツ</option>
+                  <option value="エンタメ">エンタメ</option>
+                  <option value="IT・テック">IT・テック</option>
+                  <option value="その他">その他</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Step 2: キーワード検索（メインの情報収集方法） -->
+            <div class="keyword-search-section">
+              <div class="keyword-search-header">
+                <div>
+                  <span class="keyword-section-title">収集キーワード</span>
+                  <span class="auto-fill-badge">Enterで追加・複数指定可</span>
+                </div>
+                <button type="button" id="search-keywords-btn" class="search-keywords-btn" disabled>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  AIで情報収集・記事生成
+                </button>
+              </div>
+              <div class="keyword-tags-wrapper" id="keyword-tags-wrapper">
+                <div class="keyword-tags" id="keyword-tags"></div>
+                <input type="text" id="keyword-input" class="keyword-text-input" placeholder="例: Nike、SNSキャンペーン、2024 ／ Enterで追加">
+              </div>
+              <div id="search-status" class="url-status" style="display:none;"></div>
+              <div id="search-results-panel" class="search-results-panel" style="display:none;">
+                <p class="search-results-label">収集した参考記事</p>
+                <div id="search-results-list"></div>
+              </div>
+            </div>
+
+            <!-- Step 3: 自動入力・確認フィールド -->
+            <div class="form-row split">
+              <div class="form-group">
+                <label for="input-title">見出し / タイトル <span class="required">*</span></label>
+                <input type="text" id="input-title" placeholder="例: ドミノ・ピザの深夜ゲリラクーポン" required>
+              </div>
+              <div class="form-group">
+                <label for="input-submitter">情報提供者名 <span class="required">*</span></label>
+                <input type="text" id="input-submitter" placeholder="あなたの名前" required>
+              </div>
+            </div>
+
+            <div class="form-row split">
+              <div class="form-group">
+                <label for="input-url">
+                  記事・参考リンクURL <span class="required">*</span>
+                  <span class="auto-fill-badge">URLを貼るとAIが自動解析</span>
+                </label>
+                <div class="url-input-row">
+                  <input type="url" id="input-url" placeholder="https://example.com/article/..." required>
+                  <button type="button" id="analyze-url-btn" class="analyze-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path><path d="M11 8v6M8 11h6"></path></svg>
+                    解析
+                  </button>
+                </div>
+                <div id="url-status" class="url-status" style="display:none;"></div>
+              </div>
+              <div class="form-group">
+                <label for="input-thumbnail">サムネイル画像URL</label>
+                <div class="thumbnail-input-wrapper">
+                  <input type="url" id="input-thumbnail" placeholder="https://images.unsplash.com/... (空欄時は自動で綺麗な画像がセットされます)">
+                  <button type="button" id="rand-thumb-btn" class="secondary-btn btn-small">ランダム画像</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Summary Input / Generator -->
+            <div class="ai-generator-section">
+              <div class="ai-generator-header">
+                <label for="input-raw-memo">素材メモ・記事の概要（AI要約のベース）</label>
+                <button type="button" id="generate-ai-btn" class="ai-spark-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 22 22 22 12 2"></polygon><line x1="12" y1="9" x2="12" y2="17"></line></svg>
+                  AI要約（Brief/Insight/Solution）を自動生成
+                </button>
+              </div>
+              <textarea id="input-raw-memo" rows="4" placeholder="記事の内容や自分で気づいた点、URLからコピーしたテキストなどをここに貼り付けてください。上のAI要約ボタンを押すと、戦略フォーマットに整形されます。"></textarea>
+
+              <div id="ai-loading" class="ai-loading-box" style="display: none;">
+                <div class="spinner-small"></div>
+                <span>クリエイティブ視点で戦略を分析中（Brief / Insight / Solutionを抽出しています）...</span>
+              </div>
+
+              <!-- Structured Outputs -->
+              <div class="structured-outputs">
+                <div class="form-group">
+                  <label for="input-brief" class="label-brief">
+                    <span class="badge badge-brief">Brief</span> どんな課題に対して？ <span class="required">*</span>
+                  </label>
+                  <textarea id="input-brief" rows="3" placeholder="（例）少子高齢化で伝統産業の売上が減少しており、若い世代にブランド認知を広げる必要があった。" required></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="input-insight" class="label-insight">
+                    <span class="badge badge-insight">Insight</span> どんな切り口（インサイト）で？ <span class="required">*</span>
+                  </label>
+                  <textarea id="input-insight" rows="3" placeholder="（例）若者は伝統技術そのものには興味が薄いが、「世界に一つだけのプロダクトを作る体験」や「SNS映えするユニークな製造過程」には強い関心を示す。" required></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="input-solution" class="label-solution">
+                    <span class="badge badge-solution">Solution</span> どう解決したか（アイデアと実行方法）？ <span class="required">*</span>
+                  </label>
+                  <textarea id="input-solution" rows="3" placeholder="（例）製造工程をスマホで疑似体験できるインタラクティブWEBサイトをローンチ。体験の最後に自分専用の伝統工芸品をカスタマイズ購入できる導線を設計した。" required></textarea>
+                </div>
+              </div>
+            </div>
+
+            <input type="hidden" id="edit-card-id" value="">
+            <div class="form-actions">
+              <button type="button" id="cancel-edit-btn" class="secondary-btn" style="display:none;">
+                キャンセル
+              </button>
+              <button type="submit" id="form-submit-btn" class="submit-btn primary-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                事例データベースに追加する
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Data Sync Sidebar -->
+        <div class="admin-sync-sidebar">
+          <div class="sync-card glass-panel">
+            <h3><span class="text-gradient">データファイルの同期</span></h3>
+            <p>管理画面で追加されたデータは、ブラウザの「ローカルストレージ」に保存されます。ファイルを更新してGitにコミットするために、以下のいずれかを行ってください。</p>
+
+            <div class="sync-stats">
+              <div class="stat-item">
+                <span class="stat-label">現在の総事例数</span>
+                <span id="sync-total-count" class="stat-val">0</span>
+              </div>
+            </div>
+
+            <div class="sync-actions">
+              <button id="download-json-btn" class="primary-btn btn-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                data.jsonをダウンロード
+              </button>
+              <p class="sync-help">※ダウンロードしたファイルをプロジェクトの <code>data.json</code> に上書き保存してください。</p>
+
+              <div class="divider">または</div>
+
+              <button id="copy-json-btn" class="secondary-btn btn-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                JSONコードをクリップボードにコピー
+              </button>
+            </div>
+            
+            <div class="danger-zone">
+              <h4>設定のリセット</h4>
+              <p>ローカルでの追加データをすべて消去し、初期状態（data.jsonファイルそのまま）に戻します。</p>
+              <button id="reset-data-btn" class="danger-btn">データを初期化する</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= DETAIL MODAL ================= -->
+  <div id="detail-modal" class="modal-overlay">
+    <div class="modal-container glass-panel">
+      <button class="modal-close-btn" id="modal-close-btn" aria-label="閉じる">&times;</button>
+      
+      <div class="modal-hero" id="modal-hero-bg">
+        <div class="modal-hero-overlay">
+          <div class="modal-badges-row" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span id="modal-category" class="modal-badge-cat">カテゴリー</span>
+            <span id="modal-industry" class="modal-badge-ind">業界</span>
+          </div>
+          <h2 id="modal-title">事例タイトル</h2>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-meta">
+          <span class="meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            情報提供: <strong id="modal-submitter">佐藤</strong>
+          </span>
+          <span class="meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            追加日: <span id="modal-date">2026-05-23</span>
+          </span>
+        </div>
+
+        <!-- Strategy Blocks (Brief, Insight, Solution) -->
+        <div class="strategy-container">
+          <div class="strategy-card strat-brief">
+            <div class="strat-header">
+              <span class="strat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </span>
+              <h3>Brief <span>課題設定</span></h3>
+            </div>
+            <p id="modal-brief" class="strat-desc">課題内容がここに入ります。</p>
+          </div>
+
+          <div class="strategy-card strat-insight">
+            <div class="strat-header">
+              <span class="strat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              </span>
+              <h3>Insight <span>発見・切り口</span></h3>
+            </div>
+            <p id="modal-insight" class="strat-desc">インサイトがここに入ります。</p>
+          </div>
+
+          <div class="strategy-card strat-solution">
+            <div class="strat-header">
+              <span class="strat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              </span>
+              <h3>Solution <span>解決策・アイデア</span></h3>
+            </div>
+            <p id="modal-solution" class="strat-desc">ソリューションがここに入ります。</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <a href="#" id="modal-link" target="_blank" class="primary-btn link-btn">
+            記事・参考元のリンクを開く
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2026 CREATIVE DEPOT. Powered by AI and Creative Minds.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>
