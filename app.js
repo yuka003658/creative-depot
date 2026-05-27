@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalDate = document.getElementById('modal-date');
   const modalBrief = document.getElementById('modal-brief');
   const modalInsight = document.getElementById('modal-insight');
+  const modalApproach = document.getElementById('modal-approach');
   const modalSolution = document.getElementById('modal-solution');
   const modalLink = document.getElementById('modal-link');
 
@@ -104,7 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputRawMemo = document.getElementById('input-raw-memo');
   const inputBrief = document.getElementById('input-brief');
   const inputInsight = document.getElementById('input-insight');
+  const inputApproach = document.getElementById('input-approach');
   const inputSolution = document.getElementById('input-solution');
+  const inputKeywords = document.getElementById('input-keywords');
+  const inputUserMemo = document.getElementById('input-user-memo');
   const randThumbBtn = document.getElementById('rand-thumb-btn');
   const generateAiBtn = document.getElementById('generate-ai-btn');
   const aiLoading = document.getElementById('ai-loading');
@@ -129,6 +133,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const downloadJsonBtn = document.getElementById('download-json-btn');
   const copyJsonBtn = document.getElementById('copy-json-btn');
   const resetDataBtn = document.getElementById('reset-data-btn');
+
+  // Import elements
+  const importTsvInput = document.getElementById('import-tsv-input');
+  const importTsvBtn = document.getElementById('import-tsv-btn');
+  const importAiBtn = document.getElementById('import-ai-btn');
+  const importAiProgress = document.getElementById('import-ai-progress');
+  const importPreview = document.getElementById('import-preview');
+  const downloadTemplateBtn = document.getElementById('download-template-btn');
+  let _pendingImportCards = [];
 
   // --- Initialize App ---
   init();
@@ -275,6 +288,12 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadJsonBtn.addEventListener('click', downloadJSONFile);
     copyJsonBtn.addEventListener('click', copyJSONToClipboard);
     resetDataBtn.addEventListener('click', resetToOriginalData);
+
+    // 8. TSV Import
+    importTsvInput.addEventListener('input', () => previewTsvImport(importTsvInput.value));
+    importTsvBtn.addEventListener('click', () => executeTsvImport(importTsvInput.value));
+    importAiBtn.addEventListener('click', () => batchAnalyzeAndImport(_pendingImportCards));
+    if (downloadTemplateBtn) downloadTemplateBtn.addEventListener('click', downloadImportTemplate);
   }
 
   // --- Core functions ---
@@ -322,7 +341,10 @@ document.addEventListener('DOMContentLoaded', () => {
         card.submitter || '',
         card.brief || '',
         card.insight || '',
-        card.solution || ''
+        card.approach || '',
+        card.solution || '',
+        card.keywords || '',
+        card.userMemo || '',
       ].join(' ').toLowerCase();
 
       const matchesSearch = currentSearchQuery === '' || searchFields.includes(currentSearchQuery);
@@ -410,6 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalDate.textContent = card.createdAt || '2026-05-23';
     modalBrief.textContent = card.brief;
     modalInsight.textContent = card.insight;
+    modalApproach.textContent = card.approach || '';
     modalSolution.textContent = card.solution;
     modalLink.href = card.url || '#';
 
@@ -452,6 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Heuristic parsing: extract key insights based on categories or memo
       let brief = '';
       let insight = '';
+      let approach = '';
       let solution = '';
 
       // Clean inputs
@@ -462,66 +486,79 @@ document.addEventListener('DOMContentLoaded', () => {
         "ブランディング": {
           brief: `競合製品との機能的・価格的な差異化が難しくなる中で、単なる認知（名前を知っている状態）を超え、企業の存在意義（パーパス）に深く共鳴する熱狂的なファン（ブランドパートナー）を育成し、中長期的な愛着とリピート率を高めたい。`,
           insight: `現代の消費者は、製品そのものの良さだけでなく、「その企業が社会をどう良くしようとしているか」「どのような価値観のもとで活動しているか」というストーリーに自分自身を重ね合わせ、そこに自己表現や信頼を見出す。`,
+          approach: `ブランドの「信念・パーパス」を前面に打ち出し、製品の機能訴求を脇に置く逆転の発想。消費者が「このブランドを使うこと＝自分の価値観の表明」と感じられるよう、一貫したナラティブで感情的なつながりを構築する。`,
           solution: `${title} を軸にした統合ブランディング施策を展開。一貫したビジュアル・メッセージング（VI、ブランドムービー、特設体験サイト等）を通じて情緒的コミュニケーションを設計し、顧客の心が動く強固なブランドポジションを確立した。`
         },
         "マス＆ビジュアル表現": {
           brief: `競合が似たようなデジタル広告に終始する中、スマートフォンのスクロール操作だけでは伝わらない「身体的・空間的なスケール感」を伝え、ブランドの威厳を確立したい。`,
           insight: `人は日々の通勤や街歩きで無意識のうちに刺激を求めている。圧倒的な美しさや巨大なビジュアル表現は、スマホの画面を超えた「強烈な現実体験」として写真に撮られ、SNSで二次拡散される。`,
+          approach: `「デジタルでは再現不可能な体験」を逆手に取り、オフラインのスケールそのものをコンテンツ化する。街を圧倒するビジュアルで驚きを生み、来街者が自発的に撮影・シェアする口コミの起点を設計する。`,
           solution: `${title} の大型ポスター・屋外ビジュアルを展開。デジタル画面では再現できない手触り感や解像度にこだわり、街の一部をジャックするインパクトで話題化と認知拡大を達成した。`
         },
         "テレビCM・WEB動画": {
           brief: `15秒・30秒の短尺広告があふれてスキップされる現代において、製品スペックの羅列ではなく、ターゲットの心に響く強いストーリーテリングで情緒的なファンを獲得したい。`,
           insight: `視聴者は説教くさい広告や押し売りのようなメッセージを嫌うが、誰もが共感できる「人間の本質（弱さ、優しさ、日常の小さな歪み）」を描いたドラマには感情移入し、最後まで見入ってしまう。`,
+          approach: `製品を「主役」から「脇役」に降格させ、普遍的な人間ドラマを前面に。視聴者が「自分のことだ」と感じる瞬間にブランドがそっと寄り添う構造で、説得ではなく共鳴によってブランド好意を醸成する。`,
           solution: `${title} という感情豊かなストーリー仕立てのムービーを展開。ブランドの提供価値をさりげなく背景に溶け込ませることで、スキップされずにSNS等で拡散されるブランディング動画を構築した。`
         },
         "パッケージデザイン・装丁": {
           brief: `類似商品が並ぶ店頭の棚で埋もれてしまい、広告費用をかけずに製品自体が放つ魅力だけで購入者の目を惹きつけ、ブランド選定の決め手を作りたい。`,
           insight: `現代の消費者はただ「中身」を買うだけでなく、パッケージを部屋に置いたときの心地よさや、開封時のワクワクする儀式（アンボクシング体験）といった「情緒的価値」にお金を払う。`,
+          approach: `パッケージ自体を「広告媒体かつSNSコンテンツ」として設計する。棚で目を奪うだけでなく、開封・使用・処分のすべてのシーンで写真に撮りたくなる仕掛けを仕込み、製品が自ら拡散する構造を作る。`,
           solution: `製品のアイデンティティを体現する ${title} を設計。素材感から開封のステップまで綿密に計算し、購入したことを誰かに自慢したくなるようなデザインと構造に落とし込んだ。`
         },
         "SNS施策・キャンペーン": {
           brief: `企業からの一方的なプレスリリースや広告配信ではタイムライン上で無視されるため、ユーザー自らが自発的に参加し、会話を生み出す自走型キャンペーンを展開したい。`,
           insight: `ユーザーは企業の宣伝を手伝いたくはないが、「自分がツッコミを入れられる隙があるネタ」「自分のセンスやユニークさをフォロワーにアピールできる大義名分」があれば喜んで乗ってくる。`,
+          approach: `ブランドが「舞台装置」を用意し、主役はユーザー自身に委ねる参加型フォーマットを設計。企業メッセージを伝えるのではなく、ユーザーが自己表現したくなる「お題」を作ることで自走拡散を生む。`,
           solution: `${title} の仕組みをSNS上でローンチ。ユーザーが気軽にボケたり、自分ならではの回答をハッシュタグと共に投稿したくなる「お題」を設計し、一気にトレンド入りさせる拡散の輪を生み出した。`
         },
         "WEBサイト・UI/UX": {
           brief: `情報量が多すぎるサイト設計では離脱率が高く、商品やブランドのコアイメージを直感的・没入的に体験してもらい、コンバージョンへと誘導する設計が不足していた。`,
           insight: `スクロールやクリックといった「自らの能動的なインタラクション」に対して、小気味よい音や美しいアニメーション（マイクロインタラクション）で反応が返ってくると、脳内に心地よさが生まれ、ゲーム感覚で滞在時間が伸びる。`,
+          approach: `情報設計ではなく「体験設計」を起点に据える。ユーザーのスクロールやクリックに世界観で応答するインタラクションを軸に据え、ブランドの世界に没入させながら自然にCTAへ誘導する動線を設計する。`,
           solution: `${title} を実装。3D演出やなめらかな画面遷移を活用し、ブランドの世界観をシームレスかつインタラクティブに冒険できるWebサイトに仕上げ、ユーザーを引き込んだ。`
         },
         "イベント・ポップアップストア": {
           brief: `オンライン上の接点だけでは製品の「肌触り」や「リアルな体験」が伝わらず、強いファン化やメディアによる報道（パブリシティ）が限定的だった。`,
           insight: `人は単にモノを見るだけでなく、「その場所でしかできない五感を使った体験」や「他人と共有できる思い出の空間」に価値を感じる。特に限定的なイベントは希少性からプレミアム感が生まれる。`,
+          approach: `「今ここにしかない体験」を設計し、ブランドとの記憶を身体に刻む。来場者が写真を撮らずにはいられない仕掛けを随所に配置し、会場の外へ口コミが広がるメディア化した空間を作る。`,
           solution: `ブランドの世界観を立体的に体験できる ${title} を企画・運営。写真映えする内装や体験型アトラクションを設け、来場者が自発的に拡散し、メディアがニュースとして取り上げる仕掛けを作った。`
         },
         "インストア・販促プロモーション": {
           brief: `ECの台頭により店舗への来店動機が薄れる中、店頭での購買意思決定（ラストワンマイル）の瞬間にアプローチし、他社製品ではなく自社製品をカゴに入れる決定打が欠けていた。`,
           insight: `消費者は購入時に「失敗したくない」と警戒しているが、店頭で「今だけお得」「偶然面白いモノを見つけた」という宝探しのような体験があると、衝動買いや非日常の購買へのハードルが下がる。`,
+          approach: `購買の「最後の1メートル」を制する什器・POPを起点に、店頭体験そのものをプロモーションメディア化。「なぜ今買うべきか」が一瞬で伝わる訴求と希少性演出で、迷いを決断に変換する。`,
           solution: `思わず足を止める什器とPOPを組み合わせた ${title} を展開。その場で購入する明快なインセンティブと目を引くデザインで、来店者の最後の一歩を後押しする購買体験を設計した。`
         },
         "空間デザイン・環境演出": {
           brief: `オフィスや商業施設において、単なる通路や空間としての機能に留まり、ブランドの思想を五感で感じさせるシンボリックな体験やメッセージ性が弱い。`,
           insight: `物理的な空間スケール、音、光、温度の変化は、視覚だけの情報（デジタル画面）に比べて脳に直接作用し、その場所にいた記憶を長期間にわたって感情に結びつけやすい。`,
+          approach: `空間を「ブランドの思想を歩いて体験できる物語」として再設計する。入口から出口まで動線をナラティブで貫き、歩を進めるごとにブランドの世界観への没入が深まる体験設計を行う。`,
           solution: `テクノロジーとアートを融合させた ${title} を設計。空間全体を使って物語を表現することで、訪問者が歩みを進めるごとにブランドの理念を体感できるドラマチックな環境を構築した。`
         },
         "PR・ソーシャルグッド（SDGs）": {
           brief: `企業の社会貢献活動（CSR）は真面目すぎてニュースになりにくく、また生活者にとっても「自分事」として捉えられず、共感や具体的なアクションにつながりにくい。`,
           insight: `お説教のような環境・社会保護のメッセージは耳を素通りするが、「クリエイティブなアイデアで解決へのアプローチが楽しくデザインされている」のを見ると、賢い選択として自発的に協力したくなる。`,
+          approach: `社会課題解決をエンターテインメントとして設計し、参加すること自体を報酬にする。ユーザーの行動変容を「お願い」ではなく「楽しい選択肢」として提示し、善意をムーブメントに変える。`,
           solution: `社会課題をエンターテインメントや革新的なアイデアに昇華させた ${title} を発表。単なる啓発活動に留まらず、一般消費者が参加すること自体が社会貢献になるエコシステムを設計し、大きなパブリシティを獲得した。`
         },
         "ゲリラマーケティング": {
           brief: `予算が限られる中、大手の物量広告に対抗するために、日常の何気ない瞬間に強烈な驚きをもたらし、バズやクチコミで一気に拡散させる戦術が必要だった。`,
           insight: `人はいつもの日常風景（駅、道路、街並み）に「ちょっとした異物」が混入していると、強烈な違和感から足を止め、すぐに写真を撮って「何これ！」とSNSに投稿したくなる。`,
+          approach: `広告費ゼロで「ニュース」を作る。街や公共空間を文脈ごとハックし、「なぜここに？」という違和感と驚きでメディアとSNSが自発的に拡散する事件を起こす。小さな介入で最大の波紋を生む。`,
           solution: `日常のインフラや街の空間をハックする ${title} をゲリラ的に展開。事前告知なしで驚きを提供し、SNSやメディアが勝手に取り上げて拡散する「波及効果」の最大化を図った。`
         },
         "AI・最新テック活用": {
           brief: `デジタル化が進み、万人向けの画一的な広告メッセージではユーザーの心が動かなくなっており、個人個人のコンテクストに合わせた超精密なアプローチが求められていた。`,
           insight: `ユーザーは大量の無駄な広告には拒絶反応を示すが、「今の自分の気分や状況に完璧に合致したパーソナライズ情報」であれば、驚きと共に特別な体験として受け入れる。`,
+          approach: `テクノロジーを「精度向上ツール」ではなく「体験創造エンジン」として活用する。ユーザーのリアルタイムな文脈をAIが解釈し、その瞬間にしか存在しないパーソナライズされた表現を生成する体験設計を行う。`,
           solution: `最新のテクノロジーを活用した ${title} をローンチ。ユーザーのリアルタイムな感情や入力データをもとにAIが瞬時にパーソナライズされた表現を創り出し、双方向性のある新しい広告体験を提供した。`
         },
         "メタバース・ゲーム内施策": {
           brief: `若年層（Z世代・α世代）のテレビ離れやSNS広告への忌避感が強まる中、彼らが毎日の余暇を過ごす3D仮想空間（メタバース）のコミュニティにシームレスに入り込む必要があった。`,
-          insight: `若年層は「見る広告」には反応しないが、自分自身のアバターを着飾ったり、ゲーム内で友達と集まって遊ぶ「体験の一部」としてブランドのアイテムやワールドが提供されれば、ごく自然に受け入れ楽しむ。` ,
+          insight: `若年層は「見る広告」には反応しないが、自分自身のアバターを着飾ったり、ゲーム内で友達と集まって遊ぶ「体験の一部」としてブランドのアイテムやワールドが提供されれば、ごく自然に受け入れ楽しむ。`,
+          approach: `広告枠を買うのではなく、ゲームの「コンテンツそのもの」になる。ブランド世界観をゲームの語法で翻訳し、ユーザーが遊ぶ中で自然にブランドへの親密度が高まる体験を設計する。`,
           solution: `FortniteやRobloxといったプラットフォーム上に ${title} を展開。ブランドをテーマにした独自のミニゲームやアバター用デジタルアイテムを提供し、ゲーム体験を通じてブランドと深くエンゲージメントを結ぶ機会を創出した。`
         }
       };
@@ -532,14 +569,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Mix with user inputs if raw memo has details
       brief = template.brief;
       insight = template.insight;
+      approach = template.approach;
       solution = template.solution;
 
       if (rawMemo.length > 15) {
-        // If the user entered some raw memo text, let's customize the outputs slightly to make it feel responsive to the input!
-        // We'll append a customized summary sentence from the user's memo
-        const briefKeyword = rawMemo.match(/(解決|悩み|問題|課題|原因|目標)/)?.[0] || '課題';
-        const solutionKeyword = rawMemo.match(/(開発|作成|リリース|方法|アイデア|技術|提供)/)?.[0] || 'アイデア';
-        
         brief = `【原資の課題】${rawMemo.substring(0, 100)}...\n\n上記に基づき、${template.brief}`;
         insight = `【分析】${template.insight}\n（メモの要素「${rawMemo.substring(10, 30)}...」から、ユーザーが求める体験・本音を抽出）`;
         solution = `【実行】${title}を活用し、${rawMemo.substring(Math.max(0, rawMemo.length - 80))} を実装。${template.solution}`;
@@ -548,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Populate textareas
       inputBrief.value = brief;
       inputInsight.value = insight;
+      inputApproach.value = approach;
       inputSolution.value = solution;
 
       // Hide Loader & Restore
@@ -568,10 +602,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let thumbnail = inputThumbnail.value.trim();
     const brief = inputBrief.value.trim();
     const insight = inputInsight.value.trim();
+    const approach = inputApproach.value.trim();
     const solution = inputSolution.value.trim();
+    const keywords = inputKeywords.value.trim();
+    const userMemo = inputUserMemo ? inputUserMemo.value.trim() : '';
 
-    if (!title || !category || !industry || !url || !submitter || !brief || !insight || !solution) {
-      alert('必須項目（*）を入力し、Brief / Insight / Solution の構成を作成してください。');
+    if (!title || !category || !industry || !url || !submitter || !brief || !insight || !approach || !solution) {
+      alert('必須項目（*）を入力し、Brief / Insight / Approach / Solution の構成を作成してください。');
       return;
     }
 
@@ -586,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // --- 編集モード: 既存カードを更新 ---
       const idx = creativeCards.findIndex(c => c.id === editId);
       if (idx !== -1) {
-        creativeCards[idx] = { ...creativeCards[idx], title, category, industry, brief, insight, solution, url, thumbnail, submitter };
+        creativeCards[idx] = { ...creativeCards[idx], title, category, industry, brief, insight, approach, solution, keywords, userMemo, url, thumbnail, submitter };
       }
       saveDataToLocal();
       resetEditMode();
@@ -597,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // --- 追加モード: 新規カードを追加 ---
       const newId = creativeCards.length > 0 ? Math.max(...creativeCards.map(c => c.id)) + 1 : 1;
       const today = new Date().toISOString().split('T')[0];
-      creativeCards.push({ id: newId, title, category, industry, brief, insight, solution, url, thumbnail, submitter, createdAt: today });
+      creativeCards.push({ id: newId, title, category, industry, brief, insight, approach, solution, keywords, userMemo, url, thumbnail, submitter, createdAt: today });
       saveDataToLocal();
       addCardForm.reset();
       switchMode('viewer');
@@ -617,7 +654,10 @@ document.addEventListener('DOMContentLoaded', () => {
     inputSubmitter.value = card.submitter || '';
     inputBrief.value = card.brief || '';
     inputInsight.value = card.insight || '';
+    inputApproach.value = card.approach || '';
     inputSolution.value = card.solution || '';
+    inputKeywords.value = card.keywords || '';
+    if (inputUserMemo) inputUserMemo.value = card.userMemo || '';
 
     formSubmitBtn.innerHTML = `
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -723,6 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function searchByKeywords() {
     const category = inputCategory.value || '';
     const industry = inputIndustry.value || '';
+    const userMemo = inputUserMemo ? inputUserMemo.value.trim() : '';
     setSearchStatus('loading', 'ネット検索中・AI分析中...');
     searchKeywordsBtn.disabled = true;
 
@@ -730,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('http://localhost:8001/api/search-keywords', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords, category, industry }),
+        body: JSON.stringify({ keywords, category, industry, user_memo: userMemo }),
       });
       const data = await res.json();
 
@@ -739,8 +780,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.title) inputTitle.value = data.title;
         if (data.url) inputUrl.value = data.url;
         if (data.thumbnail) inputThumbnail.value = data.thumbnail;
+        if (data.category && !inputCategory.value) inputCategory.value = data.category;
+        if (data.industry && !inputIndustry.value) inputIndustry.value = data.industry;
         if (data.brief) inputBrief.value = data.brief;
         if (data.insight) inputInsight.value = data.insight;
+        if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
 
         // 参考記事一覧を表示
@@ -798,6 +842,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function autoAnalyzeUrl(url) {
     const category = inputCategory.value || '';
+    const title = inputTitle.value.trim();
+    const kws = inputKeywords.value.trim()
+      ? inputKeywords.value.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+    const userMemo = inputUserMemo ? inputUserMemo.value.trim() : '';
     setUrlStatus('loading', '記事を取得・AI分析中...');
     analyzeUrlBtn.disabled = true;
 
@@ -805,15 +854,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('http://localhost:8001/api/analyze-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, category }),
+        body: JSON.stringify({ url, category, title, keywords: kws, user_memo: userMemo }),
       });
       const data = await res.json();
 
       if (data.success) {
         if (data.title && !inputTitle.value) inputTitle.value = data.title;
         if (data.thumbnail && !inputThumbnail.value) inputThumbnail.value = data.thumbnail;
+        if (data.category && !inputCategory.value) inputCategory.value = data.category;
+        if (data.industry && !inputIndustry.value) inputIndustry.value = data.industry;
         if (data.brief) inputBrief.value = data.brief;
         if (data.insight) inputInsight.value = data.insight;
+        if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
         setUrlStatus('success', '記事情報を自動入力しました。内容を確認・編集してください。');
         setTimeout(() => setUrlStatus('idle'), 4000);
@@ -835,6 +887,257 @@ document.addEventListener('DOMContentLoaded', () => {
     urlStatusEl.className = `url-status url-status-${state}`;
     urlStatusEl.textContent = message;
     urlStatusEl.style.display = 'flex';
+  }
+
+  // --- TSV Bulk Import (from Google Sheets copy-paste) ---
+
+  // スプレッドシートコピー時の引用符付きフィールド（セル内改行含む）を正しく解析
+  function parseTsvRows(rawText) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
+    const text = rawText.replace(/\r\n/g, '\n') + '\n';
+
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; }
+          else inQuotes = false;
+        } else {
+          // セル内の改行はスペースに変換
+          field += (ch === '\n') ? ' ' : ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === '\t') {
+          row.push(field.trim());
+          field = '';
+        } else if (ch === '\n') {
+          row.push(field.trim());
+          field = '';
+          if (row.some(f => f)) rows.push(row);
+          row = [];
+        } else {
+          field += ch;
+        }
+      }
+    }
+    return rows;
+  }
+
+  function parseTsv(rawText) {
+    const rows = parseTsvRows(rawText);
+    const cards = [];
+    const today = new Date().toISOString().split('T')[0];
+    let nextId = creativeCards.length > 0 ? Math.max(...creativeCards.map(c => c.id)) + 1 : 1;
+
+    for (const cols of rows) {
+      if (!cols.length) continue;
+
+      // ヘッダー行をスキップ
+      if (
+        cols[0].includes('タイムスタンプ') || cols[0].toLowerCase().includes('timestamp') ||
+        cols[0].includes('情報提供者') || cols[0].includes('施策タイプ') || cols[0].includes('タイトル')
+      ) continue;
+
+      // タイムスタンプ列を自動検出してスキップ
+      let i = 0;
+      if (cols[0].match(/^\d{4}[\/\-]\d{2}[\/\-]\d{2}/)) i = 1;
+
+      const remaining = cols.slice(i);
+      if (!remaining.length) continue;
+
+      // 最小フォーマット（3列以下）: 情報提供者 | タイトル | URL → AIで補完
+      if (remaining.length <= 3) {
+        const [submitter = '', title = '', url = ''] = remaining;
+        if (!title && !url) continue;
+        cards.push({
+          id: nextId++,
+          title: title.trim(), url: url.trim(), submitter: submitter.trim(),
+          category: '', industry: '', brief: '', insight: '', approach: '', solution: '', keywords: '', thumbnail: '',
+          createdAt: today, _needsAI: true,
+        });
+      } else {
+        // フルフォーマット（11列）
+        const [submitter = '', category = '', industry = '', title = '', url = '',
+               brief = '', insight = '', approach = '', solution = '', thumbnail = '', keywords = ''] = remaining;
+        if (!title && !url) continue;
+        cards.push({
+          id: nextId++,
+          title, category, industry, brief, insight, approach, solution, keywords,
+          url, thumbnail, submitter, createdAt: today,
+        });
+      }
+    }
+    return cards;
+  }
+
+  function previewTsvImport(rawText) {
+    if (!rawText.trim()) {
+      importPreview.style.display = 'none';
+      importAiBtn.style.display = 'none';
+      importTsvBtn.style.display = 'none';
+      _pendingImportCards = [];
+      return;
+    }
+    const cards = parseTsv(rawText);
+    _pendingImportCards = cards;
+
+    if (!cards.length) {
+      importPreview.innerHTML = '<p class="import-preview-empty">有効なデータ行が見つかりませんでした。列の順番を確認してください。</p>';
+      importPreview.style.display = 'block';
+      importAiBtn.style.display = 'none';
+      importTsvBtn.style.display = 'none';
+      return;
+    }
+
+    const hasNeedsAI = cards.some(c => c._needsAI);
+
+    if (hasNeedsAI) {
+      importPreview.innerHTML = `
+        <p class="import-preview-count">${cards.length}件を検出 — AIが自動補完します</p>
+        ${cards.map(c => `
+          <div class="import-preview-row">
+            <span class="import-preview-title">${c.title || '(タイトルなし)'}</span>
+            <span class="import-preview-meta import-preview-url">${c.url || '—'}</span>
+            <span class="import-preview-ai-badge">AI補完待ち</span>
+          </div>
+        `).join('')}
+      `;
+      importAiBtn.style.display = 'flex';
+      importTsvBtn.style.display = 'none';
+    } else {
+      importPreview.innerHTML = `
+        <p class="import-preview-count">${cards.length}件のデータを検出</p>
+        ${cards.map(c => `
+          <div class="import-preview-row">
+            <span class="import-preview-title">${c.title || '(タイトルなし)'}</span>
+            <span class="import-preview-meta">${c.category} / ${c.industry} — ${c.submitter}</span>
+          </div>
+        `).join('')}
+      `;
+      importAiBtn.style.display = 'none';
+      importTsvBtn.style.display = 'flex';
+    }
+    importPreview.style.display = 'block';
+  }
+
+  async function batchAnalyzeAndImport(cards) {
+    if (!cards.length) return;
+    importAiBtn.disabled = true;
+    importAiProgress.style.display = 'block';
+    importAiProgress.innerHTML = `
+      <div class="ai-progress-spinner"></div>
+      <span class="ai-progress-text">AIが ${cards.length} 件を分析中...</span>
+    `;
+
+    try {
+      const items = cards.map(c => ({
+        submitter: c.submitter,
+        title: c.title,
+        url: c.url,
+        keywords: c.keywords ? c.keywords.split(',').map(s => s.trim()).filter(Boolean) : [],
+        user_memo: c.userMemo || '',
+      }));
+      const res = await fetch('http://localhost:8001/api/batch-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      });
+      const data = await res.json();
+
+      const today = new Date().toISOString().split('T')[0];
+      let nextId = creativeCards.length > 0 ? Math.max(...creativeCards.map(c => c.id)) + 1 : 1;
+      const results = data.results.map((r, idx) => {
+        const orig = cards[idx];
+        if (r.success) {
+          return {
+            id: orig.id,
+            submitter: r.submitter,
+            title: r.title || orig.title,
+            url: r.url,
+            category: r.category,
+            industry: r.industry,
+            brief: r.brief,
+            insight: r.insight,
+            approach: r.approach || '',
+            solution: r.solution,
+            keywords: r.keywords || '',
+            userMemo: orig.userMemo || '',
+            thumbnail: r.thumbnail || '',
+            createdAt: orig.createdAt || today,
+          };
+        }
+        return {
+          id: orig.id,
+          submitter: orig.submitter,
+          title: orig.title,
+          url: orig.url,
+          category: '', industry: '', brief: '', insight: '', approach: '', solution: '', keywords: '', thumbnail: '',
+          createdAt: orig.createdAt || today,
+        };
+      });
+
+      const successCount = data.results.filter(r => r.success).length;
+      importAiProgress.innerHTML = `<span class="ai-progress-done">✓ AI分析完了（${successCount}/${cards.length} 件成功）</span>`;
+
+      await new Promise(r => setTimeout(r, 1200));
+
+      creativeCards.push(...results);
+      saveDataToLocal();
+      importTsvInput.value = '';
+      importPreview.style.display = 'none';
+      importAiProgress.style.display = 'none';
+      importAiBtn.style.display = 'none';
+      importAiBtn.disabled = false;
+      _pendingImportCards = [];
+      switchMode('viewer');
+      setTimeout(() => cardsGridContainer.scrollIntoView({ behavior: 'smooth' }), 200);
+    } catch {
+      importAiProgress.innerHTML = `<span class="ai-progress-error">⚠️ AI分析に失敗しました。サーバーが起動しているか確認してください（python server.py）。</span>`;
+      importAiBtn.disabled = false;
+    }
+  }
+
+  function executeTsvImport(rawText) {
+    const cards = parseTsv(rawText).filter(c => !c._needsAI);
+    if (!cards.length) { alert('インポートできるデータがありません。'); return; }
+    if (!confirm(`${cards.length}件の事例をインポートします。よろしいですか？`)) return;
+
+    creativeCards.push(...cards);
+    saveDataToLocal();
+    importTsvInput.value = '';
+    importPreview.style.display = 'none';
+    importTsvBtn.style.display = 'none';
+    _pendingImportCards = [];
+    switchMode('viewer');
+    setTimeout(() => cardsGridContainer.scrollIntoView({ behavior: 'smooth' }), 200);
+    alert(`${cards.length}件の事例をインポートしました！`);
+  }
+
+  function downloadImportTemplate() {
+    const headers = ['情報提供者', 'タイトル（施策名・事例名）', '記事URL'];
+    const example = [
+      '山田太郎',
+      'ブランド名 × キャンペーン名（例: Nike × Just Do It 2024）',
+      'https://example.com/article',
+    ];
+
+    const BOM = '﻿';
+    const csvContent = BOM
+      + headers.map(h => `"${h}"`).join(',') + '\n'
+      + example.map(v => `"${v}"`).join(',') + '\n';
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'creative-depot-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // Reset local changes and fetch data.json again
