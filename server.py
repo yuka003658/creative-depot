@@ -790,8 +790,9 @@ async def search_keywords(req: SearchRequest):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# static files はAPIルート定義後にマウント
-app.mount("/", StaticFiles(directory=str(BASE_DIR), html=True), name="static")
+# static files はローカル開発時のみマウント（Vercel では静的配信をVercel側が担当）
+if not os.environ.get("VERCEL"):
+    app.mount("/", StaticFiles(directory=str(BASE_DIR), html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn

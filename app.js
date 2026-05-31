@@ -2,6 +2,11 @@
 // CREATIVE DEPOT - CLIENT-SIDE INTERACTION & DATA MANAGEMENT
 // ==========================================================================
 
+// ローカル開発時は localhost:8001、Vercel 本番では同一オリジンの /api を使用
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:8001'
+  : '';
+
 document.addEventListener('DOMContentLoaded', () => {
   // --- State Variables ---
   let creativeCards = [];
@@ -768,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchKeywordsBtn.disabled = true;
 
     try {
-      const res = await fetch('http://localhost:8001/api/search-keywords', {
+      const res = await fetch(`${API_BASE}/api/search-keywords`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keywords, category, industry, user_memo: userMemo }),
@@ -794,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setSearchStatus('error', data.error || '検索に失敗しました');
       }
     } catch {
-      setSearchStatus('error', 'サーバーに接続できません。python server.py を起動してください。');
+      setSearchStatus('error', 'AIサーバーに接続できません。' + (API_BASE ? 'python server.py を起動してください。' : 'しばらくしてから再試行してください。'));
     }
 
     searchKeywordsBtn.disabled = false;
@@ -851,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
     analyzeUrlBtn.disabled = true;
 
     try {
-      const res = await fetch('http://localhost:8001/api/analyze-url', {
+      const res = await fetch(`${API_BASE}/api/analyze-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, category, title, keywords: kws, user_memo: userMemo }),
@@ -873,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setUrlStatus('error', data.error || 'URLの取得に失敗しました');
       }
     } catch {
-      setUrlStatus('error', 'サーバーに接続できません。ターミナルで python server.py を起動してください。');
+      setUrlStatus('error', 'AIサーバーに接続できません。' + (API_BASE ? 'ターミナルで python server.py を起動してください。' : 'しばらくしてから再試行してください。'));
     }
 
     analyzeUrlBtn.disabled = false;
@@ -1042,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
         keywords: c.keywords ? c.keywords.split(',').map(s => s.trim()).filter(Boolean) : [],
         user_memo: c.userMemo || '',
       }));
-      const res = await fetch('http://localhost:8001/api/batch-analyze', {
+      const res = await fetch(`${API_BASE}/api/batch-analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items }),
