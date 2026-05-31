@@ -870,6 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.insight) inputInsight.value = data.insight;
         if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
+        if (data.user_memo && inputUserMemo && !inputUserMemo.value.trim()) inputUserMemo.value = data.user_memo;
 
         // 参考記事一覧を表示
         renderSearchResults(data.articles || []);
@@ -1013,6 +1014,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.insight) inputInsight.value = data.insight;
         if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
+        if (data.user_memo && inputUserMemo && !inputUserMemo.value.trim()) inputUserMemo.value = data.user_memo;
 
         // BlobURL生成: 単ファイルは pdf:// or img://、複数画像は img:// + | 区切り
         if (currentFiles.length === 1) {
@@ -1065,6 +1067,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.insight) inputInsight.value = data.insight;
         if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
+        if (data.user_memo && inputUserMemo && !inputUserMemo.value.trim()) inputUserMemo.value = data.user_memo;
         setUrlStatus('success', '記事情報を自動入力しました。内容を確認・編集してください。');
         setTimeout(() => setUrlStatus('idle'), 4000);
       } else {
