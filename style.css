@@ -1191,11 +1191,55 @@ body {
 .pdf-size-hint { font-size: 0.72rem; opacity: 0.6; }
 .pdf-selected-info {
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 0.75rem 1rem;
   font-size: 0.85rem;
   color: #fca5a5;
+}
+.pdf-file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.pdf-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 20px;
+  font-size: 0.76rem;
+  color: #fca5a5;
+  max-width: 200px;
+}
+.pdf-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+.pdf-chip-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: rgba(252,165,165,0.6);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+}
+.pdf-chip-remove:hover { color: #fca5a5; }
+.pdf-selected-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pdf-file-count {
+  flex: 1;
+  font-size: 0.78rem;
+  opacity: 0.7;
 }
 #pdf-filename-display {
   flex: 1;

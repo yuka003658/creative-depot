@@ -817,12 +817,12 @@ def extract_pdf_text(pdf_bytes: bytes) -> str:
     except Exception:
         return ""
 
-def gemini_analysis_from_pdf(
-    pdf_bytes: bytes, category: str = "", title: str = "",
+def gemini_analysis_from_files(
+    file_data: list,  # list of (bytes, mime_type, filename)
+    category: str = "", title: str = "",
     user_memo: str = "", keywords_str: str = "",
-    mime_type: str = "application/pdf",
 ) -> dict:
-    """GeminiにPDF/画像を直接渡してスキャン含め4項目を抽出する。"""
+    """GeminiにPDF/画像を1枚以上渡してスキャン含め4項目を抽出する。"""
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel("gemini-1.5-flash")
@@ -836,8 +836,13 @@ def gemini_analysis_from_pdf(
         "↑ このメモを起点に深掘りしてください。"
     ) if user_memo else ""
 
-    is_image = mime_type.startswith("image/")
-    file_desc = "画像（写真・スキャン等）" if is_image else "PDF（雑誌スキャン等）"
+    n = len(file_data)
+    all_images = all(m.startswith("image/") for _, m, _ in file_data)
+    if n == 1:
+        _, mime_type, _ = file_data[0]
+        file_desc = "画像（写真・スキャン等）" if mime_type.startswith("image/") else "PDF（雑誌スキャン等）"
+    else:
+        file_desc = f"{n}枚の画像" if all_images else f"{n}点のファイル（PDF/画像）"
     title_hint = title or f"（{file_desc}から読み取ってください）"
 
     prompt = (
@@ -856,13 +861,13 @@ def gemini_analysis_from_pdf(
         '"approach":"固定観念を覆す切り口（100字以上）","solution":"具体的な解決策（150字以上）"}'
     )
 
-    file_part = {
-        "inline_data": {
-            "mime_type": mime_type,
-            "data": base64.b64encode(pdf_bytes).decode("utf-8"),
-        }
-    }
-    response = model.generate_content([file_part, prompt])
+    parts = [
+        {"inline_data": {"mime_type": m, "data": base64.b64encode(b).decode("utf-8")}}
+        for b, m, _ in file_data
+    ]
+    parts.append(prompt)
+
+    response = model.generate_content(parts)
     result = extract_json(response.text)
     if result:
         return result
@@ -870,39 +875,47 @@ def gemini_analysis_from_pdf(
 
 @app.post("/api/analyze-pdf")
 async def analyze_pdf_endpoint(
-    file: UploadFile = File(...),
+    files: list[UploadFile] = File(...),
     category: str = Form(""),
     title: str = Form(""),
     keywords: str = Form(""),
     user_memo: str = Form(""),
 ):
     try:
-        pdf_bytes = await file.read()
-        filename = file.filename or "uploaded.pdf"
-        mime_type = _get_file_mime(filename, file.content_type or "")
+        file_data = []
+        for f in files:
+            content = await f.read()
+            mime_type = _get_file_mime(f.filename or "", f.content_type or "")
+            file_data.append((content, mime_type, f.filename or "uploaded"))
+
+        if not file_data:
+            return {"success": False, "error": "ファイルが選択されていません"}
+
+        first_filename = file_data[0][2]
 
         if USE_GEMINI:
             analysis = await asyncio.to_thread(
-                gemini_analysis_from_pdf, pdf_bytes, category, title, user_memo, keywords, mime_type
+                gemini_analysis_from_files, file_data, category, title, user_memo, keywords
             )
         else:
-            # モックモード: PDFのみテキスト抽出可能（画像は空テキストで mock_analysis）
+            # モックモード: 最初のPDFからテキスト抽出（画像は空テキスト）
             body_text = ""
-            if mime_type == "application/pdf":
-                body_text = await asyncio.to_thread(extract_pdf_text, pdf_bytes)
+            for content, mime_type, _ in file_data:
+                if mime_type == "application/pdf":
+                    body_text = await asyncio.to_thread(extract_pdf_text, content)
+                    break
             analysis = mock_analysis(
-                title or filename, "", body_text,
+                title or first_filename, "", body_text,
                 category=category, focus_title=title,
                 user_memo=user_memo,
             )
 
-        # PDFタイトルをGeminiが読み取った場合は返す
-        extracted_title = analysis.pop("title", "") or title or filename
+        extracted_title = analysis.pop("title", "") or title or first_filename
 
         return {
             "success": True,
             "title": extracted_title,
-            "filename": filename,
+            "filename": first_filename,
             "thumbnail": "",
             **analysis,
         }

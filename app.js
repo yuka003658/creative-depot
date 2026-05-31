@@ -131,14 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const pdfUploadPlaceholder = document.getElementById('pdf-upload-placeholder');
   const pdfSelectedInfo = document.getElementById('pdf-selected-info');
   const pdfFilenameDisplay = document.getElementById('pdf-filename-display');
+  const pdfFileListEl = document.getElementById('pdf-file-list');
   const pdfAnalyzeBtn = document.getElementById('pdf-analyze-btn');
   const pdfStatusEl = document.getElementById('pdf-status');
   const sourceTabs = document.querySelectorAll('.source-tab');
   const sourceUrlSection = document.getElementById('source-url-section');
   const sourcePdfSection = document.getElementById('source-pdf-section');
-  // PDFのblobURLをカードIDで管理（セッション中のみ有効）
-  const pdfBlobMap = new Map();
-  let currentPdfFile = null;
+  let currentFiles = [];
 
   // Keyword search elements
   const keywordInput = document.getElementById('keyword-input');
@@ -297,25 +296,22 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // PDF upload area クリック
+    // ファイルアップロードエリア クリック
     pdfUploadArea.addEventListener('click', () => inputPdf.click());
     inputPdf.addEventListener('change', () => {
-      if (inputPdf.files[0]) handlePdfSelect(inputPdf.files[0]);
+      if (inputPdf.files.length) handleFileSelection(inputPdf.files);
     });
-    // ドラッグ&ドロップ
+    // ドラッグ&ドロップ（複数可）
     pdfUploadArea.addEventListener('dragover', e => { e.preventDefault(); pdfUploadArea.classList.add('drag-over'); });
     pdfUploadArea.addEventListener('dragleave', () => pdfUploadArea.classList.remove('drag-over'));
     pdfUploadArea.addEventListener('drop', e => {
       e.preventDefault();
       pdfUploadArea.classList.remove('drag-over');
-      const f = e.dataTransfer.files[0];
-      const accepted = /\.(pdf|jpe?g|png|webp)$/i.test(f?.name || '') ||
-        ['application/pdf','image/jpeg','image/png','image/webp'].includes(f?.type || '');
-      if (f && accepted) handlePdfSelect(f);
+      if (e.dataTransfer.files.length) handleFileSelection(e.dataTransfer.files);
     });
-    // PDF解析ボタン
+    // 解析ボタン
     if (pdfAnalyzeBtn) pdfAnalyzeBtn.addEventListener('click', () => {
-      if (currentPdfFile) analyzePdf(currentPdfFile);
+      if (currentFiles.length) analyzeFiles();
     });
 
     // URL auto-analyze: ボタンクリック or URL入力後Enterで解析
@@ -492,19 +488,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // URL / PDF / 画像 リンクの切り替え
     const cardUrl = card.url || '';
     if (cardUrl.startsWith('pdf://') || cardUrl.startsWith('img://')) {
-      // pdf://ファイル名||blobURL or img://ファイル名||blobURL 形式
       const rawPath = cardUrl.replace(/^(pdf|img):\/\//, '');
-      const parts = rawPath.split('||');
-      const fname = parts[0] || 'file';
-      const blobUrl = parts[1] || '';
+      const [namesStr, blobsStr] = rawPath.split('||');
+      const names = namesStr.split('|');
+      const firstBlob = (blobsStr || '').split('|')[0];
+      const fname = names.length > 1 ? `${names.length}枚の画像` : names[0];
       modalLink.style.display = 'none';
       if (modalPdfLink) {
-        modalPdfLink.href = blobUrl || '#';
-        modalPdfLink.style.display = blobUrl ? 'inline-flex' : 'none';
-        const label = cardUrl.startsWith('img://') ? '画像を開く' : 'PDFを開く';
-        modalPdfLink.querySelector('#modal-pdf-filename')
-          ? (modalPdfLink.childNodes[2].textContent = ` — ${fname}`)
-          : null;
+        modalPdfLink.href = firstBlob || '#';
+        modalPdfLink.style.display = firstBlob ? 'inline-flex' : 'none';
         if (modalPdfFilename) modalPdfFilename.textContent = `— ${fname}`;
       }
     } else {
@@ -734,8 +726,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelector('[data-tab="pdf"]')?.classList.add('active');
       sourceUrlSection.style.display = 'none';
       sourcePdfSection.style.display = '';
-      const fname = card.url.replace(/^(pdf|img):\/\//, '').split('||')[0];
-      if (pdfFilenameDisplay) pdfFilenameDisplay.textContent = fname;
+      const names = card.url.replace(/^(pdf|img):\/\//, '').split('||')[0].split('|');
+      const displayName = names.length > 1 ? `${names.length}枚の画像` : names[0];
+      if (pdfFilenameDisplay) pdfFilenameDisplay.textContent = displayName;
       if (pdfUploadPlaceholder) pdfUploadPlaceholder.style.display = 'none';
       if (pdfSelectedInfo) pdfSelectedInfo.style.display = 'flex';
     } else {
@@ -929,16 +922,53 @@ document.addEventListener('DOMContentLoaded', () => {
     searchStatusEl.style.display = 'flex';
   }
 
-  // --- PDF Upload & Analyze ---
+  // --- File Upload & Analyze (PDF / JPG / PNG) ---
 
-  function handlePdfSelect(file) {
-    currentPdfFile = file;
+  const ACCEPTED_EXT = /\.(pdf|jpe?g|png|webp)$/i;
+  const ACCEPTED_MIME = new Set(['application/pdf','image/jpeg','image/png','image/webp','image/gif']);
+
+  function handleFileSelection(fileList) {
+    const valid = Array.from(fileList).filter(
+      f => ACCEPTED_EXT.test(f.name) || ACCEPTED_MIME.has(f.type)
+    );
+    if (!valid.length) return;
+    currentFiles = valid;
     pdfUploadPlaceholder.style.display = 'none';
     pdfSelectedInfo.style.display = 'flex';
-    pdfFilenameDisplay.textContent = file.name;
+    renderFileChips();
     setPdfStatus('idle');
-    // ファイル選択後に自動解析
-    analyzePdf(file);
+    analyzeFiles();
+  }
+
+  function renderFileChips() {
+    if (!pdfFileListEl) return;
+    pdfFileListEl.innerHTML = currentFiles.map((f, i) => `
+      <span class="pdf-file-chip">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          ${f.type === 'application/pdf'
+            ? '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>'
+            : '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'}
+        </svg>
+        <span class="pdf-chip-name">${f.name}</span>
+        <button type="button" class="pdf-chip-remove" data-idx="${i}" title="削除">×</button>
+      </span>
+    `).join('');
+    if (pdfFilenameDisplay) {
+      pdfFilenameDisplay.textContent = currentFiles.length > 1 ? `${currentFiles.length}枚選択中` : '';
+    }
+    pdfFileListEl.querySelectorAll('.pdf-chip-remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        currentFiles.splice(parseInt(btn.dataset.idx), 1);
+        if (currentFiles.length === 0) {
+          pdfUploadPlaceholder.style.display = '';
+          pdfSelectedInfo.style.display = 'none';
+          inputUrl.value = '';
+        } else {
+          renderFileChips();
+        }
+      });
+    });
   }
 
   function setPdfStatus(state, message = '') {
@@ -948,20 +978,22 @@ document.addEventListener('DOMContentLoaded', () => {
     pdfStatusEl.style.display = 'flex';
   }
 
-  async function analyzePdf(file) {
-    if (!file) return;
+  async function analyzeFiles() {
+    if (!currentFiles.length) return;
     const category = inputCategory.value || '';
     const title = inputTitle.value.trim();
     const kws = inputKeywords.value.trim();
     const userMemo = inputUserMemo ? inputUserMemo.value.trim() : '';
 
-    const isImage = file.type.startsWith('image/');
-    setPdfStatus('loading', `${isImage ? '画像' : 'PDF'}を読み込んでAI解析中...`);
+    const label = currentFiles.length > 1
+      ? `${currentFiles.length}枚のファイル`
+      : (currentFiles[0].type.startsWith('image/') ? '画像' : 'PDF');
+    setPdfStatus('loading', `${label}を読み込んでAI解析中...`);
     if (pdfAnalyzeBtn) pdfAnalyzeBtn.disabled = true;
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      currentFiles.forEach(f => formData.append('files', f));
       formData.append('category', category);
       formData.append('title', title);
       formData.append('keywords', kws);
@@ -982,15 +1014,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
 
-        // BlobURLを生成してURLフィールドに設定（pdf:// or img:// プレフィックスでファイル名も保持）
-        const blobUrl = URL.createObjectURL(file);
-        const prefix = file.type === 'application/pdf' ? 'pdf' : 'img';
-        inputUrl.value = `${prefix}://${file.name}||${blobUrl}`;
+        // BlobURL生成: 単ファイルは pdf:// or img://、複数画像は img:// + | 区切り
+        if (currentFiles.length === 1) {
+          const f = currentFiles[0];
+          const prefix = f.type === 'application/pdf' ? 'pdf' : 'img';
+          inputUrl.value = `${prefix}://${f.name}||${URL.createObjectURL(f)}`;
+        } else {
+          const names = currentFiles.map(f => f.name).join('|');
+          const blobs = currentFiles.map(f => URL.createObjectURL(f)).join('|');
+          inputUrl.value = `img://${names}||${blobs}`;
+        }
 
-        setPdfStatus('success', `「${data.title || file.name}」の解析が完了しました。内容を確認してください。`);
+        setPdfStatus('success', `「${data.title || label}」の解析が完了しました。内容を確認してください。`);
         setTimeout(() => setPdfStatus('idle'), 5000);
       } else {
-        setPdfStatus('error', data.error || 'PDF解析に失敗しました');
+        setPdfStatus('error', data.error || 'ファイル解析に失敗しました');
       }
     } catch {
       setPdfStatus('error', 'サーバーに接続できません。');
