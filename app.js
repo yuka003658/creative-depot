@@ -98,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalApproach = document.getElementById('modal-approach');
   const modalSolution = document.getElementById('modal-solution');
   const modalLink = document.getElementById('modal-link');
+  const modalPdfLink = document.getElementById('modal-pdf-link');
+  const modalPdfFilename = document.getElementById('modal-pdf-filename');
 
   // Admin Form elements
   const addCardForm = document.getElementById('add-card-form');
@@ -122,6 +124,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const editCardIdInput = document.getElementById('edit-card-id');
   const formSubmitBtn = document.getElementById('form-submit-btn');
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+  // PDF elements
+  const inputPdf = document.getElementById('input-pdf');
+  const pdfUploadArea = document.getElementById('pdf-upload-area');
+  const pdfUploadPlaceholder = document.getElementById('pdf-upload-placeholder');
+  const pdfSelectedInfo = document.getElementById('pdf-selected-info');
+  const pdfFilenameDisplay = document.getElementById('pdf-filename-display');
+  const pdfAnalyzeBtn = document.getElementById('pdf-analyze-btn');
+  const pdfStatusEl = document.getElementById('pdf-status');
+  const sourceTabs = document.querySelectorAll('.source-tab');
+  const sourceUrlSection = document.getElementById('source-url-section');
+  const sourcePdfSection = document.getElementById('source-pdf-section');
+  // PDFのblobURLをカードIDで管理（セッション中のみ有効）
+  const pdfBlobMap = new Map();
+  let currentPdfFile = null;
 
   // Keyword search elements
   const keywordInput = document.getElementById('keyword-input');
@@ -267,6 +284,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // 検索ボタン
     searchKeywordsBtn.addEventListener('click', () => {
       if (keywords.length > 0) searchByKeywords();
+    });
+
+    // Source tabs: URL / PDF 切り替え
+    sourceTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        sourceTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const isUrl = tab.dataset.tab === 'url';
+        sourceUrlSection.style.display = isUrl ? '' : 'none';
+        sourcePdfSection.style.display = isUrl ? 'none' : '';
+      });
+    });
+
+    // PDF upload area クリック
+    pdfUploadArea.addEventListener('click', () => inputPdf.click());
+    inputPdf.addEventListener('change', () => {
+      if (inputPdf.files[0]) handlePdfSelect(inputPdf.files[0]);
+    });
+    // ドラッグ&ドロップ
+    pdfUploadArea.addEventListener('dragover', e => { e.preventDefault(); pdfUploadArea.classList.add('drag-over'); });
+    pdfUploadArea.addEventListener('dragleave', () => pdfUploadArea.classList.remove('drag-over'));
+    pdfUploadArea.addEventListener('drop', e => {
+      e.preventDefault();
+      pdfUploadArea.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f && f.type === 'application/pdf') handlePdfSelect(f);
+    });
+    // PDF解析ボタン
+    if (pdfAnalyzeBtn) pdfAnalyzeBtn.addEventListener('click', () => {
+      if (currentPdfFile) analyzePdf(currentPdfFile);
     });
 
     // URL auto-analyze: ボタンクリック or URL入力後Enterで解析
@@ -439,7 +486,25 @@ document.addEventListener('DOMContentLoaded', () => {
     modalInsight.textContent = card.insight;
     modalApproach.textContent = card.approach || '';
     modalSolution.textContent = card.solution;
-    modalLink.href = card.url || '#';
+
+    // URL or PDF リンクの切り替え
+    const cardUrl = card.url || '';
+    if (cardUrl.startsWith('pdf://')) {
+      // pdf://ファイル名||blobURL 形式
+      const parts = cardUrl.replace('pdf://', '').split('||');
+      const fname = parts[0] || 'document.pdf';
+      const blobUrl = parts[1] || '';
+      modalLink.style.display = 'none';
+      if (modalPdfLink) {
+        modalPdfLink.href = blobUrl || '#';
+        modalPdfLink.style.display = blobUrl ? 'inline-flex' : 'none';
+        if (modalPdfFilename) modalPdfFilename.textContent = `— ${fname}`;
+      }
+    } else {
+      modalLink.href = cardUrl || '#';
+      modalLink.style.display = cardUrl ? 'inline-flex' : 'none';
+      if (modalPdfLink) modalPdfLink.style.display = 'none';
+    }
 
     detailModal.classList.add('active');
     document.body.style.overflow = 'hidden'; // Stop scrolling background
@@ -654,7 +719,21 @@ document.addEventListener('DOMContentLoaded', () => {
     inputTitle.value = card.title || '';
     inputCategory.value = card.category || '';
     inputIndustry.value = card.industry || '';
-    inputUrl.value = card.url || '';
+    // PDF URLの場合はURL欄に表示しない（PDFタブに切り替え）
+    if ((card.url || '').startsWith('pdf://')) {
+      inputUrl.value = card.url || '';
+      // PDFタブに切り替え
+      sourceTabs.forEach(t => t.classList.remove('active'));
+      document.querySelector('[data-tab="pdf"]')?.classList.add('active');
+      sourceUrlSection.style.display = 'none';
+      sourcePdfSection.style.display = '';
+      const fname = card.url.replace('pdf://', '').split('||')[0];
+      if (pdfFilenameDisplay) pdfFilenameDisplay.textContent = fname;
+      if (pdfUploadPlaceholder) pdfUploadPlaceholder.style.display = 'none';
+      if (pdfSelectedInfo) pdfSelectedInfo.style.display = 'flex';
+    } else {
+      inputUrl.value = card.url || '';
+    }
     inputThumbnail.value = card.thumbnail || '';
     inputSubmitter.value = card.submitter || '';
     inputBrief.value = card.brief || '';
@@ -841,6 +920,75 @@ document.addEventListener('DOMContentLoaded', () => {
     searchStatusEl.className = `url-status url-status-${state}`;
     searchStatusEl.textContent = message;
     searchStatusEl.style.display = 'flex';
+  }
+
+  // --- PDF Upload & Analyze ---
+
+  function handlePdfSelect(file) {
+    currentPdfFile = file;
+    pdfUploadPlaceholder.style.display = 'none';
+    pdfSelectedInfo.style.display = 'flex';
+    pdfFilenameDisplay.textContent = file.name;
+    setPdfStatus('idle');
+    // ファイル選択後に自動解析
+    analyzePdf(file);
+  }
+
+  function setPdfStatus(state, message = '') {
+    if (state === 'idle') { pdfStatusEl.style.display = 'none'; return; }
+    pdfStatusEl.className = `url-status url-status-${state}`;
+    pdfStatusEl.textContent = message;
+    pdfStatusEl.style.display = 'flex';
+  }
+
+  async function analyzePdf(file) {
+    if (!file) return;
+    const category = inputCategory.value || '';
+    const title = inputTitle.value.trim();
+    const kws = inputKeywords.value.trim();
+    const userMemo = inputUserMemo ? inputUserMemo.value.trim() : '';
+
+    setPdfStatus('loading', 'PDFを読み込んでAI解析中...');
+    if (pdfAnalyzeBtn) pdfAnalyzeBtn.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', category);
+      formData.append('title', title);
+      formData.append('keywords', kws);
+      formData.append('user_memo', userMemo);
+
+      const res = await fetch(`${API_BASE}/api/analyze-pdf`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        if (data.title && !inputTitle.value) inputTitle.value = data.title;
+        if (data.category && !inputCategory.value) inputCategory.value = data.category;
+        if (data.industry && !inputIndustry.value) inputIndustry.value = data.industry;
+        if (data.brief) inputBrief.value = data.brief;
+        if (data.insight) inputInsight.value = data.insight;
+        if (data.approach) inputApproach.value = data.approach;
+        if (data.solution) inputSolution.value = data.solution;
+
+        // BlobURLを生成してURLフィールドに設定
+        const blobUrl = URL.createObjectURL(file);
+        inputUrl.value = blobUrl;
+        // pdf:// プレフィックスでファイル名も保持
+        inputUrl.value = `pdf://${file.name}||${blobUrl}`;
+
+        setPdfStatus('success', `「${data.title || file.name}」の解析が完了しました。内容を確認してください。`);
+        setTimeout(() => setPdfStatus('idle'), 5000);
+      } else {
+        setPdfStatus('error', data.error || 'PDF解析に失敗しました');
+      }
+    } catch {
+      setPdfStatus('error', 'サーバーに接続できません。');
+    }
+    if (pdfAnalyzeBtn) pdfAnalyzeBtn.disabled = false;
   }
 
   // --- URL Auto-Analyze ---

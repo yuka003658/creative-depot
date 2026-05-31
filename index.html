@@ -212,18 +212,57 @@
 
             <div class="form-row split">
               <div class="form-group">
-                <label for="input-url">
-                  記事・参考リンクURL <span class="required">*</span>
-                  <span class="auto-fill-badge">URLを貼るとAIが自動解析</span>
-                </label>
-                <div class="url-input-row">
-                  <input type="url" id="input-url" placeholder="https://example.com/article/..." required>
-                  <button type="button" id="analyze-url-btn" class="analyze-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path><path d="M11 8v6M8 11h6"></path></svg>
-                    解析
+                <!-- URL / PDF 切り替えタブ -->
+                <div class="source-tabs">
+                  <button type="button" class="source-tab active" data-tab="url">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    URL
+                  </button>
+                  <button type="button" class="source-tab" data-tab="pdf">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    PDF スキャン
                   </button>
                 </div>
-                <div id="url-status" class="url-status" style="display:none;"></div>
+
+                <!-- URL入力 -->
+                <div id="source-url-section">
+                  <label for="input-url">
+                    記事・参考リンクURL <span class="required">*</span>
+                    <span class="auto-fill-badge">URLを貼るとAIが自動解析</span>
+                  </label>
+                  <div class="url-input-row">
+                    <input type="url" id="input-url" placeholder="https://example.com/article/...">
+                    <button type="button" id="analyze-url-btn" class="analyze-btn">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path><path d="M11 8v6M8 11h6"></path></svg>
+                      解析
+                    </button>
+                  </div>
+                  <div id="url-status" class="url-status" style="display:none;"></div>
+                </div>
+
+                <!-- PDF入力 -->
+                <div id="source-pdf-section" style="display:none;">
+                  <label>雑誌スキャンPDF <span class="required">*</span>
+                    <span class="auto-fill-badge">スキャン画像も Gemini AIが読み取ります</span>
+                  </label>
+                  <div class="pdf-upload-area" id="pdf-upload-area">
+                    <input type="file" id="input-pdf" accept=".pdf" style="display:none;">
+                    <div class="pdf-upload-placeholder" id="pdf-upload-placeholder">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                      <span>クリックまたはドロップしてPDFを選択</span>
+                      <span class="pdf-size-hint">推奨 10MB 以下</span>
+                    </div>
+                    <div class="pdf-selected-info" id="pdf-selected-info" style="display:none;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                      <span id="pdf-filename-display">ファイル名</span>
+                      <button type="button" id="pdf-analyze-btn" class="analyze-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                        AI解析
+                      </button>
+                    </div>
+                  </div>
+                  <div id="pdf-status" class="url-status" style="display:none;"></div>
+                </div>
               </div>
               <div class="form-group">
                 <label for="input-thumbnail">サムネイル画像URL</label>
@@ -485,9 +524,15 @@
         </div>
 
         <div class="modal-footer">
+          <!-- 通常のWebリンク -->
           <a href="#" id="modal-link" target="_blank" class="primary-btn link-btn">
             記事・参考元のリンクを開く
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+          <!-- PDFリンク（PDF元の場合のみ表示） -->
+          <a href="#" id="modal-pdf-link" target="_blank" class="primary-btn link-btn pdf-link-btn" style="display:none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            PDFを開く <span id="modal-pdf-filename"></span>
           </a>
         </div>
       </div>

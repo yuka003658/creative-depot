@@ -1138,6 +1138,80 @@ body {
   letter-spacing: 0.3px;
 }
 
+/* --- Source tabs (URL / PDF) ------------------------------------ */
+.source-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.source-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.source-tab:hover { border-color: rgba(255,255,255,0.25); color: var(--text-main); }
+.source-tab.active {
+  background: rgba(99,102,241,0.15);
+  border-color: rgba(99,102,241,0.5);
+  color: #a5b4fc;
+}
+
+/* --- PDF upload area -------------------------------------------- */
+.pdf-upload-area {
+  border: 1.5px dashed rgba(239,68,68,0.4);
+  border-radius: 10px;
+  background: rgba(239,68,68,0.04);
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+.pdf-upload-area:hover, .pdf-upload-area.drag-over {
+  border-color: rgba(239,68,68,0.7);
+  background: rgba(239,68,68,0.08);
+}
+.pdf-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.pdf-upload-placeholder svg { opacity: 0.5; }
+.pdf-size-hint { font-size: 0.72rem; opacity: 0.6; }
+.pdf-selected-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: #fca5a5;
+}
+#pdf-filename-display {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pdf-link-btn {
+  background: rgba(239,68,68,0.15) !important;
+  border-color: rgba(239,68,68,0.4) !important;
+  color: #fca5a5 !important;
+}
+.pdf-link-btn:hover {
+  background: rgba(239,68,68,0.25) !important;
+}
+
 .url-input-row {
   display: flex;
   gap: 0.5rem;

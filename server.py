@@ -10,14 +10,14 @@ Gemini AI（無料枠）に切り替える場合:
   ※ https://aistudio.google.com/app/apikey で無料取得可能
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import asyncio
 import requests
 from bs4 import BeautifulSoup
-import os, json
+import os, json, base64, io
 from pathlib import Path
 try:
     from ddgs import DDGS
@@ -785,6 +785,107 @@ async def search_keywords(req: SearchRequest):
             "title": title,
             "url": primary_url,
             "thumbnail": thumbnail,
+            **analysis,
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+# ----------------------------------------------------------------
+# PDF解析
+# ----------------------------------------------------------------
+def extract_pdf_text(pdf_bytes: bytes) -> str:
+    """pypdfでテキストPDFから文字列を抽出（スキャン系は空になる）。"""
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+        pages = []
+        for page in reader.pages:
+            t = page.extract_text() or ""
+            if t.strip():
+                pages.append(t.strip())
+        return "\n\n".join(pages)[:4000]
+    except Exception:
+        return ""
+
+def gemini_analysis_from_pdf(
+    pdf_bytes: bytes, category: str = "", title: str = "",
+    user_memo: str = "", keywords_str: str = ""
+) -> dict:
+    """GeminiにPDFを直接渡してスキャン画像も含めて4項目を抽出する。"""
+    import google.generativeai as genai
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel("gemini-1.5-flash")
+
+    cats = "、".join(CATEGORIES)
+    inds = "、".join(INDUSTRIES)
+    cat_hint = f"\n施策タイプは「{category}」を優先してください。" if category else ""
+    kw_hint  = f"\n関連キーワード: {keywords_str}" if keywords_str else ""
+    memo_block = (
+        f"\n\n【★最優先インプット：ユーザーの着眼点メモ★】\n{user_memo}\n"
+        "↑ このメモを起点に深掘りしてください。"
+    ) if user_memo else ""
+
+    prompt = (
+        "あなたは電通・博報堂のトッププランナーです。\n"
+        "添付のPDF（雑誌スキャン等）を読み込み、掲載されているマーケティング施策・広告事例を分析してください。\n"
+        "URLから取得した情報と、ユーザーが記述した着眼点メモをガッチャンコして、"
+        "【真の課題】【ターゲットの未充足インサイト】【固定観念を覆す切り口】【具体的な解決策】を"
+        "150文字以上でロジカルに深掘り・言語化してください。一般論は厳禁。\n"
+        f"分析対象タイトル: {title or '（PDFから読み取ってください）'}"
+        f"{kw_hint}{memo_block}{cat_hint}\n\n"
+        f"施策タイプの選択肢: {cats}\n"
+        f"業界の選択肢: {inds}\n\n"
+        "必ず次のJSONのみを返してください（コードブロック不要）:\n"
+        '{"category":"施策タイプ","industry":"業界","title":"施策タイトル（PDF内から読み取る）",'
+        '"brief":"真の課題（150字以上）","insight":"ターゲットの未充足インサイト（150字以上）",'
+        '"approach":"固定観念を覆す切り口（100字以上）","solution":"具体的な解決策（150字以上）"}'
+    )
+
+    pdf_part = {
+        "inline_data": {
+            "mime_type": "application/pdf",
+            "data": base64.b64encode(pdf_bytes).decode("utf-8"),
+        }
+    }
+    response = model.generate_content([pdf_part, prompt])
+    result = extract_json(response.text)
+    if result:
+        return result
+    return {"category": "", "industry": "", "title": "", "brief": "", "insight": "", "approach": "", "solution": ""}
+
+@app.post("/api/analyze-pdf")
+async def analyze_pdf_endpoint(
+    file: UploadFile = File(...),
+    category: str = Form(""),
+    title: str = Form(""),
+    keywords: str = Form(""),
+    user_memo: str = Form(""),
+):
+    try:
+        pdf_bytes = await file.read()
+        filename = file.filename or "uploaded.pdf"
+
+        if USE_GEMINI:
+            analysis = await asyncio.to_thread(
+                gemini_analysis_from_pdf, pdf_bytes, category, title, user_memo, keywords
+            )
+        else:
+            # モックモード: pypdfでテキスト抽出 → mock_analysis
+            body_text = await asyncio.to_thread(extract_pdf_text, pdf_bytes)
+            analysis = mock_analysis(
+                title or filename, "", body_text,
+                category=category, focus_title=title,
+                user_memo=user_memo,
+            )
+
+        # PDFタイトルをGeminiが読み取った場合は返す
+        extracted_title = analysis.pop("title", "") or title or filename
+
+        return {
+            "success": True,
+            "title": extracted_title,
+            "filename": filename,
+            "thumbnail": "",
             **analysis,
         }
     except Exception as e:
