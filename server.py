@@ -791,8 +791,18 @@ async def search_keywords(req: SearchRequest):
         return {"success": False, "error": str(e)}
 
 # ----------------------------------------------------------------
-# PDF解析
+# ファイル解析（PDF / JPG / PNG）
 # ----------------------------------------------------------------
+def _get_file_mime(filename: str, content_type: str = "") -> str:
+    ext = filename.lower().rsplit('.', 1)[-1] if '.' in filename else ''
+    return {
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'webp': 'image/webp',
+        'gif': 'image/gif',
+    }.get(ext) or (content_type if content_type not in ('', 'application/octet-stream') else 'application/pdf')
+
 def extract_pdf_text(pdf_bytes: bytes) -> str:
     """pypdfでテキストPDFから文字列を抽出（スキャン系は空になる）。"""
     try:
@@ -809,9 +819,10 @@ def extract_pdf_text(pdf_bytes: bytes) -> str:
 
 def gemini_analysis_from_pdf(
     pdf_bytes: bytes, category: str = "", title: str = "",
-    user_memo: str = "", keywords_str: str = ""
+    user_memo: str = "", keywords_str: str = "",
+    mime_type: str = "application/pdf",
 ) -> dict:
-    """GeminiにPDFを直接渡してスキャン画像も含めて4項目を抽出する。"""
+    """GeminiにPDF/画像を直接渡してスキャン含め4項目を抽出する。"""
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel("gemini-1.5-flash")
@@ -825,29 +836,33 @@ def gemini_analysis_from_pdf(
         "↑ このメモを起点に深掘りしてください。"
     ) if user_memo else ""
 
+    is_image = mime_type.startswith("image/")
+    file_desc = "画像（写真・スキャン等）" if is_image else "PDF（雑誌スキャン等）"
+    title_hint = title or f"（{file_desc}から読み取ってください）"
+
     prompt = (
         "あなたは電通・博報堂のトッププランナーです。\n"
-        "添付のPDF（雑誌スキャン等）を読み込み、掲載されているマーケティング施策・広告事例を分析してください。\n"
-        "URLから取得した情報と、ユーザーが記述した着眼点メモをガッチャンコして、"
+        f"添付の{file_desc}を読み込み、掲載されているマーケティング施策・広告事例を分析してください。\n"
+        "ユーザーが記述した着眼点メモをガッチャンコして、"
         "【真の課題】【ターゲットの未充足インサイト】【固定観念を覆す切り口】【具体的な解決策】を"
         "150文字以上でロジカルに深掘り・言語化してください。一般論は厳禁。\n"
-        f"分析対象タイトル: {title or '（PDFから読み取ってください）'}"
+        f"分析対象タイトル: {title_hint}"
         f"{kw_hint}{memo_block}{cat_hint}\n\n"
         f"施策タイプの選択肢: {cats}\n"
         f"業界の選択肢: {inds}\n\n"
         "必ず次のJSONのみを返してください（コードブロック不要）:\n"
-        '{"category":"施策タイプ","industry":"業界","title":"施策タイトル（PDF内から読み取る）",'
+        '{"category":"施策タイプ","industry":"業界","title":"施策タイトル（ファイル内から読み取る）",'
         '"brief":"真の課題（150字以上）","insight":"ターゲットの未充足インサイト（150字以上）",'
         '"approach":"固定観念を覆す切り口（100字以上）","solution":"具体的な解決策（150字以上）"}'
     )
 
-    pdf_part = {
+    file_part = {
         "inline_data": {
-            "mime_type": "application/pdf",
+            "mime_type": mime_type,
             "data": base64.b64encode(pdf_bytes).decode("utf-8"),
         }
     }
-    response = model.generate_content([pdf_part, prompt])
+    response = model.generate_content([file_part, prompt])
     result = extract_json(response.text)
     if result:
         return result
@@ -864,14 +879,17 @@ async def analyze_pdf_endpoint(
     try:
         pdf_bytes = await file.read()
         filename = file.filename or "uploaded.pdf"
+        mime_type = _get_file_mime(filename, file.content_type or "")
 
         if USE_GEMINI:
             analysis = await asyncio.to_thread(
-                gemini_analysis_from_pdf, pdf_bytes, category, title, user_memo, keywords
+                gemini_analysis_from_pdf, pdf_bytes, category, title, user_memo, keywords, mime_type
             )
         else:
-            # モックモード: pypdfでテキスト抽出 → mock_analysis
-            body_text = await asyncio.to_thread(extract_pdf_text, pdf_bytes)
+            # モックモード: PDFのみテキスト抽出可能（画像は空テキストで mock_analysis）
+            body_text = ""
+            if mime_type == "application/pdf":
+                body_text = await asyncio.to_thread(extract_pdf_text, pdf_bytes)
             analysis = mock_analysis(
                 title or filename, "", body_text,
                 category=category, focus_title=title,

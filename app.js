@@ -309,7 +309,9 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       pdfUploadArea.classList.remove('drag-over');
       const f = e.dataTransfer.files[0];
-      if (f && f.type === 'application/pdf') handlePdfSelect(f);
+      const accepted = /\.(pdf|jpe?g|png|webp)$/i.test(f?.name || '') ||
+        ['application/pdf','image/jpeg','image/png','image/webp'].includes(f?.type || '');
+      if (f && accepted) handlePdfSelect(f);
     });
     // PDF解析ボタン
     if (pdfAnalyzeBtn) pdfAnalyzeBtn.addEventListener('click', () => {
@@ -487,17 +489,22 @@ document.addEventListener('DOMContentLoaded', () => {
     modalApproach.textContent = card.approach || '';
     modalSolution.textContent = card.solution;
 
-    // URL or PDF リンクの切り替え
+    // URL / PDF / 画像 リンクの切り替え
     const cardUrl = card.url || '';
-    if (cardUrl.startsWith('pdf://')) {
-      // pdf://ファイル名||blobURL 形式
-      const parts = cardUrl.replace('pdf://', '').split('||');
-      const fname = parts[0] || 'document.pdf';
+    if (cardUrl.startsWith('pdf://') || cardUrl.startsWith('img://')) {
+      // pdf://ファイル名||blobURL or img://ファイル名||blobURL 形式
+      const rawPath = cardUrl.replace(/^(pdf|img):\/\//, '');
+      const parts = rawPath.split('||');
+      const fname = parts[0] || 'file';
       const blobUrl = parts[1] || '';
       modalLink.style.display = 'none';
       if (modalPdfLink) {
         modalPdfLink.href = blobUrl || '#';
         modalPdfLink.style.display = blobUrl ? 'inline-flex' : 'none';
+        const label = cardUrl.startsWith('img://') ? '画像を開く' : 'PDFを開く';
+        modalPdfLink.querySelector('#modal-pdf-filename')
+          ? (modalPdfLink.childNodes[2].textContent = ` — ${fname}`)
+          : null;
         if (modalPdfFilename) modalPdfFilename.textContent = `— ${fname}`;
       }
     } else {
@@ -719,15 +726,15 @@ document.addEventListener('DOMContentLoaded', () => {
     inputTitle.value = card.title || '';
     inputCategory.value = card.category || '';
     inputIndustry.value = card.industry || '';
-    // PDF URLの場合はURL欄に表示しない（PDFタブに切り替え）
-    if ((card.url || '').startsWith('pdf://')) {
+    // PDF/画像URLの場合はURL欄に表示しない（PDFタブに切り替え）
+    if ((card.url || '').startsWith('pdf://') || (card.url || '').startsWith('img://')) {
       inputUrl.value = card.url || '';
       // PDFタブに切り替え
       sourceTabs.forEach(t => t.classList.remove('active'));
       document.querySelector('[data-tab="pdf"]')?.classList.add('active');
       sourceUrlSection.style.display = 'none';
       sourcePdfSection.style.display = '';
-      const fname = card.url.replace('pdf://', '').split('||')[0];
+      const fname = card.url.replace(/^(pdf|img):\/\//, '').split('||')[0];
       if (pdfFilenameDisplay) pdfFilenameDisplay.textContent = fname;
       if (pdfUploadPlaceholder) pdfUploadPlaceholder.style.display = 'none';
       if (pdfSelectedInfo) pdfSelectedInfo.style.display = 'flex';
@@ -948,7 +955,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const kws = inputKeywords.value.trim();
     const userMemo = inputUserMemo ? inputUserMemo.value.trim() : '';
 
-    setPdfStatus('loading', 'PDFを読み込んでAI解析中...');
+    const isImage = file.type.startsWith('image/');
+    setPdfStatus('loading', `${isImage ? '画像' : 'PDF'}を読み込んでAI解析中...`);
     if (pdfAnalyzeBtn) pdfAnalyzeBtn.disabled = true;
 
     try {
@@ -974,11 +982,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
 
-        // BlobURLを生成してURLフィールドに設定
+        // BlobURLを生成してURLフィールドに設定（pdf:// or img:// プレフィックスでファイル名も保持）
         const blobUrl = URL.createObjectURL(file);
-        inputUrl.value = blobUrl;
-        // pdf:// プレフィックスでファイル名も保持
-        inputUrl.value = `pdf://${file.name}||${blobUrl}`;
+        const prefix = file.type === 'application/pdf' ? 'pdf' : 'img';
+        inputUrl.value = `${prefix}://${file.name}||${blobUrl}`;
 
         setPdfStatus('success', `「${data.title || file.name}」の解析が完了しました。内容を確認してください。`);
         setTimeout(() => setPdfStatus('idle'), 5000);

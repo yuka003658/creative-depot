@@ -219,8 +219,8 @@
                     URL
                   </button>
                   <button type="button" class="source-tab" data-tab="pdf">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                    PDF スキャン
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    画像・PDF
                   </button>
                 </div>
 
@@ -242,15 +242,15 @@
 
                 <!-- PDF入力 -->
                 <div id="source-pdf-section" style="display:none;">
-                  <label>雑誌スキャンPDF <span class="required">*</span>
-                    <span class="auto-fill-badge">スキャン画像も Gemini AIが読み取ります</span>
+                  <label>画像・PDF・スキャン <span class="required">*</span>
+                    <span class="auto-fill-badge">PDF・JPG・PNG を Gemini AIが読み取ります</span>
                   </label>
                   <div class="pdf-upload-area" id="pdf-upload-area">
-                    <input type="file" id="input-pdf" accept=".pdf" style="display:none;">
+                    <input type="file" id="input-pdf" accept=".pdf,.jpg,.jpeg,.png,.webp" style="display:none;">
                     <div class="pdf-upload-placeholder" id="pdf-upload-placeholder">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                      <span>クリックまたはドロップしてPDFを選択</span>
-                      <span class="pdf-size-hint">推奨 10MB 以下</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                      <span>クリックまたはドロップしてファイルを選択</span>
+                      <span class="pdf-size-hint">PDF / JPG / PNG 対応 — 推奨 10MB 以下</span>
                     </div>
                     <div class="pdf-selected-info" id="pdf-selected-info" style="display:none;">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
