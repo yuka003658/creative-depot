@@ -98,8 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalApproach = document.getElementById('modal-approach');
   const modalSolution = document.getElementById('modal-solution');
   const modalLink = document.getElementById('modal-link');
-  const modalPdfLink = document.getElementById('modal-pdf-link');
-  const modalPdfFilename = document.getElementById('modal-pdf-filename');
+  const modalPdfLinksContainer = document.getElementById('modal-pdf-links-container');
 
   // Admin Form elements
   const addCardForm = document.getElementById('add-card-form');
@@ -487,22 +486,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // URL / PDF / 画像 リンクの切り替え
     const cardUrl = card.url || '';
+    if (modalPdfLinksContainer) modalPdfLinksContainer.innerHTML = '';
     if (cardUrl.startsWith('pdf://') || cardUrl.startsWith('img://')) {
       const rawPath = cardUrl.replace(/^(pdf|img):\/\//, '');
       const [namesStr, blobsStr] = rawPath.split('||');
       const names = namesStr.split('|');
-      const firstBlob = (blobsStr || '').split('|')[0];
-      const fname = names.length > 1 ? `${names.length}枚の画像` : names[0];
+      const blobs = (blobsStr || '').split('|').filter(Boolean);
       modalLink.style.display = 'none';
-      if (modalPdfLink) {
-        modalPdfLink.href = firstBlob || '#';
-        modalPdfLink.style.display = firstBlob ? 'inline-flex' : 'none';
-        if (modalPdfFilename) modalPdfFilename.textContent = `— ${fname}`;
+      if (modalPdfLinksContainer && blobs.length > 0) {
+        const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+        blobs.forEach((blobUrl, i) => {
+          const label = blobs.length > 1 ? `画像${i + 1}を開く — ${names[i] || ''}` : `画像を開く — ${names[0] || ''}`;
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.target = '_blank';
+          a.className = 'primary-btn link-btn pdf-link-btn';
+          a.innerHTML = `${svgIcon} ${label}`;
+          modalPdfLinksContainer.appendChild(a);
+        });
       }
     } else {
       modalLink.href = cardUrl || '#';
       modalLink.style.display = cardUrl ? 'inline-flex' : 'none';
-      if (modalPdfLink) modalPdfLink.style.display = 'none';
     }
 
     detailModal.classList.add('active');

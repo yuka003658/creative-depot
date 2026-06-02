@@ -24,11 +24,24 @@ try:
 except ImportError:
     from duckduckgo_search import DDGS
 
+# .env ファイルがあれば自動読み込み
+_env_path = Path(__file__).parent / ".env"
+if _env_path.exists():
+    for _line in _env_path.read_text().splitlines():
+        if "=" in _line and not _line.startswith("#"):
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
+
 # ----------------------------------------------------------------
-# 設定: GEMINI_API_KEY 環境変数を設定すると本物のAIに切り替わります
+# 設定: ANTHROPIC_API_KEY > GROQ_API_KEY > GEMINI_API_KEY の優先順
 # ----------------------------------------------------------------
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-USE_GEMINI = bool(GEMINI_API_KEY)
+GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
+GROQ_API_KEY      = os.environ.get("GROQ_API_KEY", "")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+USE_ANTHROPIC = bool(ANTHROPIC_API_KEY)
+USE_GEMINI    = bool(GEMINI_API_KEY) and not USE_ANTHROPIC
+USE_GROQ      = bool(GROQ_API_KEY) and not USE_ANTHROPIC and not USE_GEMINI
+USE_AI        = USE_ANTHROPIC or USE_GEMINI or USE_GROQ
 
 BASE_DIR = Path(__file__).parent
 
@@ -408,7 +421,7 @@ def gemini_analysis(
 ) -> dict:
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
     cats = "、".join(CATEGORIES)
     inds = "、".join(INDUSTRIES)
@@ -466,6 +479,190 @@ def gemini_analysis(
     return {"category": "", "industry": "", "brief": "", "insight": "", "approach": "", "solution": ""}
 
 # ----------------------------------------------------------------
+# システムプロンプト（マーケティングプランナー役割 + Few-Shot）
+# ----------------------------------------------------------------
+_ANALYSIS_SYSTEM_PROMPT = """\
+# 役割
+あなたは一流のマーケティングプランナー、およびUXリサーチャーです。
+提出された記事（テキストや画像）を深く分析し、単なる表面的な事実の要約ではなく、その裏にある「消費者の心理変容」や「ビジネス・UX設計における革新性（構造）」を抽出してください。
+
+# 出力フォーマットと抽出ルール
+
+## Brief（課題設定）
+単に「情報が多い」だけでなく、それが消費者にどんなストレス（心理的負荷、真贋判定の疲弊）を与えているか、時代のパラダイムシフト（例：コスパ→タイパ→メンパへの進化）を踏まえて構造的に記述してください。
+
+## Insight（発見・消費者の本音）
+消費者が自覚している表面的なニーズではなく、深層心理（本音）を言語化してください。
+（例：自分で選ぶ自由よりも、考えなくていい安心の方が価値が高いなど、一見矛盾するようなインサイト）
+
+## Approach（切り口・コアアイデア）
+従来の常識（UXの通説など）をどう近現代の視点で逆転・再定義したかを記述してください。
+単なる「サービス提供」ではなく、「●●から▲▲への価値訴求軸のシフト」という抽象度で捉えてください。
+
+## Solution（解決策・アイデア）
+事例の具体的な仕組み（機能、実績数値など）を記述し、それがどのように上記のアプローチを具現化しているかを紐付けて説明してください。
+
+# 思考のガイドライン（重要）
+- 「事実の箇条書き」は禁止します。
+- 文脈同士をロジカルに繋ぎ、「つまりどういうことか？」を1段上の視点（抽象化）で言語化してください。
+- 記事内で語られている具体的な数値（例：累計300万食、26年1月など）はSolutionやBriefの文脈を補強するエビデンスとして適切に配置してください。
+
+# 出力例（Few-Shot）
+以下は理想的な出力の質と抽象度です。この水準を維持してください。
+
+【Brief例】
+AI（人工知能）の普及により情報量が爆増し、真偽不明の情報も増えた結果、生活者は常に「選択の負荷（最適解を選ばなければならないプレッシャー）」と「真贋判定の負荷」にさらされるようになった。さらにSNS上でちょっとした感想を漏らすだけで周囲から〝正しさ〟の指摘が来る環境が、心をじわじわと疲弊させている。コスパ（コストパフォーマンス）→タイパ（タイムパフォーマンス）と続いてきた消費最適化の流れは2026年、「自分の意思決定コストそのものを削減したい」という第3ステージ＝メンタルパフォーマンス（メンパ）へと進化。各企業は「ユーザーが選ばなくて済む」体験設計への刷新を迫られている。
+
+【Insight例】
+デリOisixのβ版開始から約1年・累計300万食突破という数字が象徴するのは、消費者がもはや「何を食べるか」を自分で決めること自体に疲弊しているという事実だ。「自分で選ぶ自由」より「考えなくていい安心」の方が価値が高い時代に突入した。ぐるなびがAIに店選びを委ねるUMAMEを作り、Voicetepが顔写真・テキストプロフィールなしで音声通話からマッチングを始めたのも同じ構造——判断材料が増えれば増えるほど「失敗したくない・正解がわからない」不安が高まるというパラドックスを突いた設計だ。
+
+【Approach例】
+「選択肢を減らす＝ユーザーの自由を奪う」という従来のUX常識を根底から逆転させ、「選ばせないこと＝最高の体験」として再定義する。AIを「答えを探す補助ツール」ではなく「意思決定を丸ごと代行する代理人」として位置付けることで、サービスの価値訴求軸を「便利さ」から「メンタルの解放」へシフトさせる戦略。
+
+【Solution例】
+【デリOisix】顧客が注文品目と配送頻度を登録するとAIが自動でカートに商品を入れる「ゼロ選択」モデルを構築。電子レンジで温めるだけの調理済み2〜3人分主菜＋副菜を冷蔵配送し、β版開始から約1年で累計300万食超を達成。【UMAME（ぐるなび）】希望を一文で入力するだけでAIが最適な店を絞り込み、2026年1月20日に正式版リリース。【Voicetep】顔写真・テキストプロフィール不要でまず音声通話からマッチングを開始するUI設計で「断られる恐怖」を設計から排除。
+"""
+
+_JSON_SPEC = (
+    '{"category":"施策タイプ（選択肢から1つ）","industry":"業界（選択肢から1つ）","title":"施策タイトル",'
+    '"brief":"課題設定（200字以上・パラダイムシフトを含む構造的記述）",'
+    '"insight":"消費者の本音（200字以上・深層心理・矛盾するインサイト）",'
+    '"approach":"切り口（150字以上・価値訴求軸のシフトを●●から▲▲へという形で）",'
+    '"solution":"解決策（200字以上・具体的仕組みと数値をApproachと紐付けて）",'
+    '"user_memo":"広告プランナー視点での「ここが凄い！」ポイント（この事例固有の発想転換を2〜3文で）"}'
+)
+
+# ----------------------------------------------------------------
+# AI バックエンド（Anthropic Claude / Groq Llama）
+# ----------------------------------------------------------------
+def _claude_request(prompt: str, system: str, images: list = None) -> dict:
+    """Anthropic Claude API（ANTHROPIC_API_KEY設定時）"""
+    import anthropic
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    content = []
+    if images:
+        for img_bytes, mime_type in images:
+            b64 = base64.b64encode(img_bytes).decode("utf-8")
+            content.append({"type": "image", "source": {"type": "base64", "media_type": mime_type, "data": b64}})
+    content.append({"type": "text", "text": prompt})
+    kwargs = {
+        "model": "claude-3-5-sonnet-20241022",
+        "max_tokens": 2048,
+        "temperature": 0.55,
+        "messages": [{"role": "user", "content": content}],
+    }
+    if system:
+        kwargs["system"] = system
+    r = client.messages.create(**kwargs)
+    return extract_json(r.content[0].text) or {}
+
+def _groq_request(prompt: str, system: str, images: list = None) -> dict:
+    """Groq API（GROQ_API_KEY設定時）"""
+    from groq import Groq
+    client = Groq(api_key=GROQ_API_KEY)
+    if images:
+        content = []
+        for img_bytes, mime_type in images:
+            b64 = base64.b64encode(img_bytes).decode("utf-8")
+            content.append({"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64}"}})
+        content.append({"type": "text", "text": prompt})
+        model = "meta-llama/llama-4-scout-17b-16e-instruct"
+    else:
+        content = prompt
+        model = "llama-3.3-70b-versatile"
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": content})
+    r = client.chat.completions.create(model=model, messages=messages, temperature=0.55)
+    return extract_json(r.choices[0].message.content) or {}
+
+def _ai_request(prompt: str, system: str = "", images: list = None) -> dict:
+    """アクティブなAIバックエンドへのルーター"""
+    if USE_ANTHROPIC:
+        return _claude_request(prompt, system, images)
+    elif USE_GROQ:
+        return _groq_request(prompt, system, images)
+    return {}
+
+# ----------------------------------------------------------------
+# 分析関数（URL / 検索 / ファイル）
+# ----------------------------------------------------------------
+def _build_analysis_user_prompt(
+    title: str, body_text: str,
+    category: str = "", industry: str = "", focus_title: str = "",
+    extra_context: str = "", user_memo: str = ""
+) -> str:
+    cats = "、".join(CATEGORIES)
+    inds = "、".join(INDUSTRIES)
+    hints = []
+    if focus_title and focus_title.lower() not in title.lower():
+        hints.append(f"【重要】「{focus_title}」に関する情報のみを対象に分析してください。")
+    if category:
+        hints.append(f"施策タイプは「{category}」を優先してください。")
+    if industry:
+        hints.append(f"業界は「{industry}」を優先してください。")
+    hint_block = ("\n" + "\n".join(hints)) if hints else ""
+    extra_block = f"\n\n【Web検索で収集した関連情報】\n{extra_context[:800]}" if extra_context else ""
+    memo_block = (
+        f"\n\n【★最優先インプット：ユーザーの着眼点メモ★】\n{user_memo}\n"
+        "↑ このメモはユーザーが「ここが凄い」と感じた核心です。このメモを起点に深掘りしてください。"
+    ) if user_memo else ""
+    return (
+        f"ページタイトル: {title}\n分析対象: {focus_title or title}\n"
+        f"ページ内容:\n{body_text[:1200]}"
+        f"{memo_block}{extra_block}{hint_block}\n\n"
+        f"施策タイプの選択肢: {cats}\n業界の選択肢: {inds}\n\n"
+        f"必ず次のJSONのみを返してください（コードブロック・説明文は不要）:\n{_JSON_SPEC}"
+    )
+
+def groq_analysis(title, body_text, category="", industry="", focus_title="", extra_context="", user_memo="") -> dict:
+    prompt = _build_analysis_user_prompt(title, body_text, category, industry, focus_title, extra_context, user_memo)
+    return _ai_request(prompt, _ANALYSIS_SYSTEM_PROMPT)
+
+def groq_analysis_from_search(keywords: list, combined_text: str, category: str, user_memo: str = "") -> dict:
+    cats = "、".join(CATEGORIES)
+    inds = "、".join(INDUSTRIES)
+    cat_hint = f"\n施策タイプは「{category}」を優先してください。" if category else ""
+    memo_block = (
+        f"\n\n【★最優先インプット：ユーザーの着眼点メモ★】\n{user_memo}\n"
+        "↑ このメモを起点に深掘りしてください。"
+    ) if user_memo else ""
+    prompt = (
+        f"検索キーワード: {'、'.join(keywords)}\n\n検索結果:\n{combined_text[:1400]}"
+        f"{memo_block}{cat_hint}\n\n"
+        f"施策タイプの選択肢: {cats}\n業界の選択肢: {inds}\n\n"
+        f"必ず次のJSONのみを返してください（コードブロック不要）:\n{_JSON_SPEC}"
+    )
+    return _ai_request(prompt, _ANALYSIS_SYSTEM_PROMPT)
+
+def groq_analysis_from_files(file_data: list, category="", title="", user_memo="", keywords_str="") -> dict:
+    cats = "、".join(CATEGORIES)
+    inds = "、".join(INDUSTRIES)
+    cat_hint = f"\n施策タイプは「{category}」を優先してください。" if category else ""
+    kw_hint = f"\n関連キーワード: {keywords_str}" if keywords_str else ""
+    memo_block = (
+        f"\n\n【★最優先インプット：ユーザーの着眼点メモ★】\n{user_memo}\n"
+        "↑ このメモを起点に深掘りしてください。"
+    ) if user_memo else ""
+    title_hint = title or "（ファイルから読み取ってください）"
+    prompt = (
+        f"添付の{len(file_data)}点のファイルを読み込み、マーケティング施策・広告事例を分析してください。\n"
+        f"分析対象タイトル: {title_hint}{kw_hint}{memo_block}{cat_hint}\n\n"
+        f"施策タイプの選択肢: {cats}\n業界の選択肢: {inds}\n\n"
+        f"必ず次のJSONのみを返してください（コードブロック不要）:\n{_JSON_SPEC}"
+    )
+    images = [(b, m) for b, m, _ in file_data if m.startswith("image/")]
+    if images:
+        return _ai_request(prompt, _ANALYSIS_SYSTEM_PROMPT, images)
+    body_text = ""
+    for b, m, _ in file_data:
+        if m == "application/pdf":
+            body_text = extract_pdf_text(b)
+            break
+    return _ai_request(prompt + f"\n\nPDFテキスト:\n{body_text[:2000]}", _ANALYSIS_SYSTEM_PROMPT)
+
+# ----------------------------------------------------------------
 # エンドポイント（static mount より先に定義すること）
 # ----------------------------------------------------------------
 async def _web_context(query: str, max_results: int = 6, keywords: list = None) -> str:
@@ -507,6 +704,12 @@ async def analyze_url(req: AnalyzeRequest):
         if USE_GEMINI:
             analysis = await asyncio.to_thread(
                 gemini_analysis,
+                scraped["title"], scraped["body_text"],
+                req.category, "", req.title, extra_context, req.user_memo,
+            )
+        elif USE_AI:
+            analysis = await asyncio.to_thread(
+                groq_analysis,
                 scraped["title"], scraped["body_text"],
                 req.category, "", req.title, extra_context, req.user_memo,
             )
@@ -586,6 +789,13 @@ async def _analyze_one_item(item: BatchAnalyzeItem) -> dict:
                 scraped["body_text"],
                 "", "", item.title, extra_context, item.user_memo,
             )
+        elif USE_AI:
+            analysis = await asyncio.to_thread(
+                groq_analysis,
+                scraped.get("title") or item.title,
+                scraped["body_text"],
+                "", "", item.title, extra_context, item.user_memo,
+            )
         else:
             analysis = mock_analysis(
                 scraped.get("title") or item.title,
@@ -642,7 +852,8 @@ async def batch_analyze(req: BatchAnalyzeRequest):
 
 @app.get("/api/status")
 async def status():
-    return {"mode": "gemini" if USE_GEMINI else "mock", "ready": True}
+    mode = "claude" if USE_ANTHROPIC else ("gemini" if USE_GEMINI else ("groq" if USE_GROQ else "mock"))
+    return {"mode": mode, "ready": True}
 
 # ----------------------------------------------------------------
 # キーワード検索エンドポイント
@@ -699,7 +910,7 @@ def mock_analysis_from_search(keywords: list, combined_text: str, category: str,
 def gemini_analysis_from_search(keywords: list, combined_text: str, category: str, user_memo: str = "") -> dict:
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash-lite")
     keyword_str = "、".join(keywords)
     cats = "、".join(CATEGORIES)
     inds = "、".join(INDUSTRIES)
@@ -767,6 +978,10 @@ async def search_keywords(req: SearchRequest):
             analysis = await asyncio.to_thread(
                 gemini_analysis_from_search, req.keywords, combined_text, req.category, req.user_memo
             )
+        elif USE_AI:
+            analysis = await asyncio.to_thread(
+                groq_analysis_from_search, req.keywords, combined_text, req.category, req.user_memo
+            )
         else:
             analysis = mock_analysis_from_search(req.keywords, combined_text, req.category, req.user_memo)
 
@@ -827,7 +1042,7 @@ def gemini_analysis_from_files(
     """GeminiにPDF/画像を1枚以上渡してスキャン含め4項目を抽出する。"""
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
     cats = "、".join(CATEGORIES)
     inds = "、".join(INDUSTRIES)
@@ -899,6 +1114,10 @@ async def analyze_pdf_endpoint(
         if USE_GEMINI:
             analysis = await asyncio.to_thread(
                 gemini_analysis_from_files, file_data, category, title, user_memo, keywords
+            )
+        elif USE_AI:
+            analysis = await asyncio.to_thread(
+                groq_analysis_from_files, file_data, category, title, user_memo, keywords
             )
         else:
             # モックモード: 最初のPDFからテキスト抽出（画像は空テキスト）
