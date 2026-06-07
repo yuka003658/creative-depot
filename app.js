@@ -119,7 +119,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateAiBtn = document.getElementById('generate-ai-btn');
   const aiLoading = document.getElementById('ai-loading');
   const analyzeUrlBtn = document.getElementById('analyze-url-btn');
+  const compareAnalyzeBtn = document.getElementById('compare-analyze-btn');
   const urlStatusEl = document.getElementById('url-status');
+  const comparisonPanel = document.getElementById('comparison-panel');
+  const comparisonMeta = document.getElementById('comparison-meta');
+  const comparisonCloseBtn = document.getElementById('comparison-close-btn');
   const editCardIdInput = document.getElementById('edit-card-id');
   const formSubmitBtn = document.getElementById('form-submit-btn');
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
@@ -320,6 +324,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = inputUrl.value.trim();
       if (url.startsWith('http')) autoAnalyzeUrl(url);
     });
+
+    // 比較解析ボタン
+    if (compareAnalyzeBtn) {
+      compareAnalyzeBtn.addEventListener('click', () => {
+        const url = inputUrl.value.trim();
+        if (url.startsWith('http')) compareAnalyzeUrl(url);
+      });
+    }
+
+    // 比較パネルを閉じる
+    if (comparisonCloseBtn) {
+      comparisonCloseBtn.addEventListener('click', () => {
+        if (comparisonPanel) comparisonPanel.style.display = 'none';
+      });
+    }
     inputUrl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -1090,6 +1109,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     analyzeUrlBtn.disabled = false;
+  }
+
+  async function compareAnalyzeUrl(url) {
+    // 現在のフィールド値をBeforeとして保存
+    const before = {
+      brief:    inputBrief?.value.trim()    || '',
+      insight:  inputInsight?.value.trim()  || '',
+      approach: inputApproach?.value.trim() || '',
+      solution: inputSolution?.value.trim() || '',
+    };
+    if (!before.brief && !before.insight) {
+      alert('先に「解析」ボタンでBeforeのデータを取得してください。');
+      return;
+    }
+
+    setUrlStatus('loading', '比較用に再解析中...');
+    if (compareAnalyzeBtn) compareAnalyzeBtn.disabled = true;
+    if (analyzeUrlBtn) analyzeUrlBtn.disabled = true;
+
+    try {
+      const category  = inputCategory?.value || '';
+      const title     = inputTitle?.value.trim() || '';
+      const kws       = inputKeywords?.value.trim()
+        ? inputKeywords.value.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const userMemo  = inputUserMemo?.value.trim() || '';
+
+      const res  = await fetch(`${API_BASE}/api/analyze-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, category, title, keywords: kws, user_memo: userMemo }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const after = {
+          brief:    data.brief    || '',
+          insight:  data.insight  || '',
+          approach: data.approach || '',
+          solution: data.solution || '',
+        };
+        renderComparison(before, after, title || data.title || url);
+        setUrlStatus('success', '比較完了。パネルをご確認ください。');
+        setTimeout(() => setUrlStatus('idle'), 4000);
+      } else {
+        setUrlStatus('error', data.error || '再解析に失敗しました');
+      }
+    } catch {
+      setUrlStatus('error', 'AIサーバーに接続できません。');
+    }
+    if (compareAnalyzeBtn) compareAnalyzeBtn.disabled = false;
+    if (analyzeUrlBtn) analyzeUrlBtn.disabled = false;
+  }
+
+  function renderComparison(before, after, label) {
+    if (!comparisonPanel) return;
+    const fields = ['brief', 'insight', 'approach', 'solution'];
+    fields.forEach(f => {
+      const b = document.getElementById(`cmp-before-${f}`);
+      const a = document.getElementById(`cmp-after-${f}`);
+      if (b) b.textContent = before[f] || '（データなし）';
+      if (a) a.textContent = after[f]  || '（データなし）';
+    });
+    if (comparisonMeta) comparisonMeta.textContent = label;
+    comparisonPanel.style.display = 'block';
+    comparisonPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function renderUrlReferences(refs) {

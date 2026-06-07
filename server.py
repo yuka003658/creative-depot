@@ -438,7 +438,7 @@ def gemini_analysis(
         hints.append(f"業界は「{industry}」を優先してください。")
     hint_block = ("\n" + "\n".join(hints)) if hints else ""
 
-    extra_block = f"\n\n【Web検索で収集した関連情報】\n{extra_context[:800]}" if extra_context else ""
+    extra_block = f"\n\n【Web検索で収集した関連情報】\n{extra_context[:1200]}" if extra_context else ""
 
     # user_memo がある場合は最優先インプットとして冒頭に置く
     memo_block = (
@@ -506,6 +506,7 @@ _ANALYSIS_SYSTEM_PROMPT = """\
 - 「事実の箇条書き」は禁止します。
 - 文脈同士をロジカルに繋ぎ、「つまりどういうことか？」を1段上の視点（抽象化）で言語化してください。
 - 記事内で語られている具体的な数値（例：累計300万食、26年1月など）はSolutionやBriefの文脈を補強するエビデンスとして適切に配置してください。
+- Web検索スニペットの文章をInsight・Solution・Briefにそのまま転記しない。スニペットは「素材」として使い、必ずプランナー視点で解釈・言語化すること。
 
 # 出力例（Few-Shot）
 以下は理想的な出力の質と抽象度です。この水準を維持してください。
@@ -603,14 +604,14 @@ def _build_analysis_user_prompt(
     if industry:
         hints.append(f"業界は「{industry}」を優先してください。")
     hint_block = ("\n" + "\n".join(hints)) if hints else ""
-    extra_block = f"\n\n【Web検索で収集した関連情報】\n{extra_context[:800]}" if extra_context else ""
+    extra_block = f"\n\n【Web検索で収集した関連情報】\n{extra_context[:1200]}" if extra_context else ""
     memo_block = (
         f"\n\n【★最優先インプット：ユーザーの着眼点メモ★】\n{user_memo}\n"
         "↑ このメモはユーザーが「ここが凄い」と感じた核心です。このメモを起点に深掘りしてください。"
     ) if user_memo else ""
     return (
         f"ページタイトル: {title}\n分析対象: {focus_title or title}\n"
-        f"ページ内容:\n{body_text[:1200]}"
+        f"ページ内容:\n{body_text[:2000]}"
         f"{memo_block}{extra_block}{hint_block}\n\n"
         f"施策タイプの選択肢: {cats}\n業界の選択肢: {inds}\n\n"
         f"必ず次のJSONのみを返してください（コードブロック・説明文は不要）:\n{_JSON_SPEC}"

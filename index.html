@@ -236,6 +236,10 @@
                       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path><path d="M11 8v6M8 11h6"></path></svg>
                       解析
                     </button>
+                    <button type="button" id="compare-analyze-btn" class="analyze-btn compare-btn" title="現在の内容をBeforeとして保存し、同じURLで再解析してAfterと比較">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                      比較解析
+                    </button>
                   </div>
                   <div id="url-status" class="url-status" style="display:none;"></div>
                 </div>
@@ -362,6 +366,31 @@
               </button>
             </div>
           </form>
+        </div>
+
+        <!-- Before / After 比較パネル -->
+        <div id="comparison-panel" class="glass-panel comparison-panel" style="display:none;">
+          <div class="comparison-panel-header">
+            <span class="text-gradient">Before / After 比較</span>
+            <span class="comparison-meta" id="comparison-meta"></span>
+            <button type="button" id="comparison-close-btn" class="comparison-close-btn">&times;</button>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-col before-col">
+              <div class="comparison-col-header">Before <span class="comparison-col-badge">変更前</span></div>
+              <div class="comparison-field"><div class="comparison-field-label">課題（Brief）</div><p id="cmp-before-brief" class="comparison-text"></p></div>
+              <div class="comparison-field"><div class="comparison-field-label">インサイト（Insight）</div><p id="cmp-before-insight" class="comparison-text"></p></div>
+              <div class="comparison-field"><div class="comparison-field-label">切り口（Approach）</div><p id="cmp-before-approach" class="comparison-text"></p></div>
+              <div class="comparison-field"><div class="comparison-field-label">解決策（Solution）</div><p id="cmp-before-solution" class="comparison-text"></p></div>
+            </div>
+            <div class="comparison-col after-col">
+              <div class="comparison-col-header">After <span class="comparison-col-badge after-badge">改善後</span></div>
+              <div class="comparison-field"><div class="comparison-field-label">課題（Brief）</div><p id="cmp-after-brief" class="comparison-text"></p></div>
+              <div class="comparison-field"><div class="comparison-field-label">インサイト（Insight）</div><p id="cmp-after-insight" class="comparison-text"></p></div>
+              <div class="comparison-field"><div class="comparison-field-label">切り口（Approach）</div><p id="cmp-after-approach" class="comparison-text"></p></div>
+              <div class="comparison-field"><div class="comparison-field-label">解決策（Solution）</div><p id="cmp-after-solution" class="comparison-text"></p></div>
+            </div>
+          </div>
         </div>
 
         <!-- Data Sync Sidebar -->

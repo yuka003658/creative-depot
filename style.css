@@ -2202,3 +2202,114 @@ body {
     padding: 1rem;
   }
 }
+
+/* ================================================================
+   Before / After 比較パネル
+   ================================================================ */
+.compare-btn {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+.compare-btn:hover { opacity: 0.85; }
+
+.comparison-panel {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  grid-column: 1 / -1;
+}
+
+.comparison-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.comparison-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.comparison-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+.comparison-close-btn:hover { color: var(--text-primary); }
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.comparison-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.comparison-col-header {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-glass);
+}
+.comparison-col-badge {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.08);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.after-badge {
+  background: rgba(139, 92, 246, 0.25);
+  color: #c4b5fd;
+}
+
+.comparison-field {
+  background: rgba(0,0,0,0.15);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--border-radius-sm);
+  padding: 0.75rem 1rem;
+}
+.comparison-field-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+}
+.comparison-text {
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: pre-wrap;
+}
+.after-col .comparison-text {
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .comparison-grid { grid-template-columns: 1fr; }
+  .compare-btn { display: none; }
+}
