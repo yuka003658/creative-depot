@@ -1076,7 +1076,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
         if (data.user_memo && inputUserMemo && !inputUserMemo.value.trim()) inputUserMemo.value = data.user_memo;
-        renderUrlReferences(data.references || []);
+        const refs = (data.references && data.references.length)
+          ? data.references
+          : (url ? [{ title: data.title || url, url: url, snippet: '元記事' }] : []);
+        renderUrlReferences(refs);
         setUrlStatus('success', '記事情報を自動入力しました。内容を確認・編集してください。');
         setTimeout(() => setUrlStatus('idle'), 4000);
       } else {
