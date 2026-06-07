@@ -238,10 +238,6 @@
                     </button>
                   </div>
                   <div id="url-status" class="url-status" style="display:none;"></div>
-                  <div id="url-references-panel" class="search-results-panel" style="display:none;">
-                    <p class="search-results-label">AIが参照した関連記事</p>
-                    <div id="url-references-list"></div>
-                  </div>
                 </div>
 
                 <!-- PDF入力 -->
@@ -277,6 +273,12 @@
                   <button type="button" id="rand-thumb-btn" class="secondary-btn btn-small">ランダム画像</button>
                 </div>
               </div>
+            </div>
+
+            <!-- AIが参照した関連記事（URL解析時のみ表示） -->
+            <div id="url-references-panel" class="search-results-panel" style="display:none;">
+              <p class="search-results-label">AIが参照した関連記事</p>
+              <div id="url-references-list"></div>
             </div>
 
             <!-- 関連キーワード（検索精度向上） -->
