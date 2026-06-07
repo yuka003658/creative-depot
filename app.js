@@ -146,6 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchStatusEl = document.getElementById('search-status');
   const searchResultsPanel = document.getElementById('search-results-panel');
   const searchResultsList = document.getElementById('search-results-list');
+  const urlReferencesPanel = document.getElementById('url-references-panel');
+  const urlReferencesList = document.getElementById('url-references-list');
   let keywords = [];
 
   // Sync / Action elements
@@ -1053,6 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : [];
     const userMemo = inputUserMemo ? inputUserMemo.value.trim() : '';
     setUrlStatus('loading', '記事を取得・AI分析中...');
+    if (urlReferencesPanel) urlReferencesPanel.style.display = 'none';
     analyzeUrlBtn.disabled = true;
 
     try {
@@ -1073,6 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.approach) inputApproach.value = data.approach;
         if (data.solution) inputSolution.value = data.solution;
         if (data.user_memo && inputUserMemo && !inputUserMemo.value.trim()) inputUserMemo.value = data.user_memo;
+        renderUrlReferences(data.references || []);
         setUrlStatus('success', '記事情報を自動入力しました。内容を確認・編集してください。');
         setTimeout(() => setUrlStatus('idle'), 4000);
       } else {
@@ -1083,6 +1087,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     analyzeUrlBtn.disabled = false;
+  }
+
+  function renderUrlReferences(refs) {
+    if (!urlReferencesPanel || !urlReferencesList) return;
+    if (!refs.length) { urlReferencesPanel.style.display = 'none'; return; }
+    urlReferencesList.innerHTML = refs.map(r => `
+      <div class="search-result-item">
+        <div class="result-meta">
+          <a href="${r.url}" target="_blank" class="result-title">${r.title}</a>
+        </div>
+        <p class="result-snippet">${r.snippet}...</p>
+      </div>
+    `).join('');
+    urlReferencesPanel.style.display = 'block';
   }
 
   function setUrlStatus(state, message = '') {

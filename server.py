@@ -665,11 +665,11 @@ def groq_analysis_from_files(file_data: list, category="", title="", user_memo="
 # ----------------------------------------------------------------
 # エンドポイント（static mount より先に定義すること）
 # ----------------------------------------------------------------
-async def _web_context(query: str, max_results: int = 6, keywords: list = None) -> str:
-    """DDGでqueryを検索し、マーケティング関連の関連スニペットをまとめて返す。
+async def _web_context(query: str, max_results: int = 6, keywords: list = None) -> tuple:
+    """DDGでqueryを検索し、(スニペットテキスト, 参照URLリスト) を返す。
     keywords が指定された場合はクエリに追加して精度を上げる。"""
     if not query:
-        return ""
+        return "", []
     kw_suffix = (" " + " ".join(keywords)) if keywords else ""
     try:
         def _search():
@@ -680,14 +680,16 @@ async def _web_context(query: str, max_results: int = 6, keywords: list = None) 
                 ))
         results = await asyncio.to_thread(_search)
         snippets = []
+        refs = []
         for r in results:
             body = (r.get("body") or "").strip()
             if not body or len(body) < 30:
                 continue
             snippets.append(f"【{r['title']}】\n{body}")
-        return "\n\n".join(snippets[:4])
+            refs.append({"title": r["title"], "url": r.get("href", ""), "snippet": body[:120]})
+        return "\n\n".join(snippets[:4]), refs[:4]
     except Exception:
-        return ""
+        return "", []
 
 @app.post("/api/analyze-url")
 async def analyze_url(req: AnalyzeRequest):
@@ -696,7 +698,7 @@ async def analyze_url(req: AnalyzeRequest):
         focus = req.title or scraped["title"]
 
         # 施策タイトルでWeb検索して追加コンテキストを取得（常に実行）
-        extra_context = await _web_context(
+        extra_context, references = await _web_context(
             f"{focus} 広告 マーケティング 施策 事例", max_results=5,
             keywords=req.keywords or [],
         )
@@ -723,6 +725,7 @@ async def analyze_url(req: AnalyzeRequest):
             "success": True,
             "title": scraped["title"],
             "thumbnail": scraped["thumbnail"],
+            "references": references,
             **analysis,
         }
     except Exception as e:
